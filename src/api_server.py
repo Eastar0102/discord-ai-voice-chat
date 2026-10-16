@@ -290,8 +290,8 @@ async def inspect_state():
         "prompt": character.read("prompt.txt"),
         "topic": character.read("topic.txt"),
         "llm": current_llm(),  # 런타임 교체가 반영되도록 config 스냅샷이 아닌 실제 provider 기준
-        "stt": {k: stt_cfg.get(k) for k in
-                ("model", "device", "compute_type", "beam_size", "hotwords")},
+        "stt": {**{k: stt_cfg.get(k) for k in ("model", "device", "compute_type", "beam_size")},
+                "hotwords": stt_cfg.get("hotwords") or character.HOTWORDS},
         "tts": current_tts(),  # 런타임 교체 반영
     }
 

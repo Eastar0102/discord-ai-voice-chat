@@ -35,16 +35,50 @@ From a fresh install to running your own character, in order.
 
 ## 2. Create the Discord bot
 
-1. [Discord Developer Portal](https://discord.com/developers/applications) → **New Application**.
-2. Go to **Bot**:
-   - **Reset Token** and copy the token. You can't see it again, so put it in `.env` right away.
-   - Under **Privileged Gateway Intents**, enable **Message Content Intent**. Without it the bot can't read commands like `!join`.
-3. Go to **OAuth2 → URL Generator**:
-   - Scopes: `bot`
-   - Bot Permissions: `View Channels`, `Send Messages`, `Read Message History`, `Attach Files` (transcript upload), `Connect`, `Speak`, `Use Voice Activity`
-4. Open the generated URL to invite the bot to your server.
+You only do this once. Follow the steps in order.
 
-> As a permission integer: `36801536` (the sum of the seven above).
+**2-1. Create the application**
+1. Log in to the [Discord Developer Portal](https://discord.com/developers/applications).
+2. Click **New Application** (top right) and name it (e.g. `Momo`). This is the name the bot shows in Discord.
+3. Optionally, upload an icon under **General Information**; it becomes the bot's avatar.
+
+**2-2. Get the token**
+1. Open **Bot** in the left menu.
+2. Click **Reset Token** → **Yes, do it!**. The token is shown once, so **Copy** it.
+   - The token is the bot's password. Never paste it in chat, screenshots or GitHub.
+   - If you lose it, reset it again; the old one stops working.
+
+**2-3. Enable the intent**
+1. On the same **Bot** page, scroll to **Privileged Gateway Intents**.
+2. Turn on **Message Content Intent** and click **Save Changes**.
+   - Without it the bot can't read commands like `!join`. If the bot is in your server but ignores commands, this is almost always why.
+
+**2-4. Invite it to a server**
+1. Open **OAuth2** → **URL Generator**.
+2. Under **Scopes**, check `bot`.
+3. Under **Bot Permissions**, check these seven:
+
+   | permission | why |
+   |---|---|
+   | View Channels | to see channels |
+   | Send Messages | to answer commands and post transcripts |
+   | Read Message History | to read links and command messages |
+   | Attach Files | to upload the transcript `.txt` |
+   | Connect | to join voice channels |
+   | Speak | to speak replies |
+   | Use Voice Activity | to talk with voice activity detection |
+
+   (As a permission integer: `36801536`.)
+4. Open the generated URL at the bottom, pick the server, and **Authorize**.
+5. The bot now appears offline in the server's member list. That's expected; nothing is running yet.
+
+> For a first test, use a server of your own with nobody else in it. Other people's talk won't end up in memory, and screenshots won't show anyone else's name.
+
+<!-- Reference image slots: the Developer Portal Bot page (intents) and the OAuth2 URL Generator.
+     Add docs/images/guide-portal-bot.png and guide-portal-oauth.png, then uncomment.
+![Bot page — Message Content Intent](images/guide-portal-bot.png)
+![OAuth2 URL Generator — bot scope and permissions](images/guide-portal-oauth.png)
+-->
 
 ## 3. Install
 
@@ -135,33 +169,112 @@ Keep chat local and run only the background memory extraction on a stronger mode
 
 ## 5. First run
 
+This walks through starting everything from the control app. To start from a terminal without the app, see [5-6](#5-6-start-from-a-terminal-without-the-app).
+
+### 5-1. Pre-flight check
+
+| check | command | expected |
+|---|---|---|
+| Python | `python --version` | `Python 3.10.x` or later |
+| Node | `node --version` | `v18` or later |
+| packages | `venv\Scripts\python -c "import faster_whisper, chromadb, edge_tts"` | prints nothing (no error) |
+| GPU (optional) | `venv\Scripts\python -c "import torch; print(torch.cuda.is_available())"` | `True` |
+| Ollama (for local models) | `ollama list` | your pulled model is listed |
+| token | open `.env` | `DISCORD_TOKEN=` has a value |
+
+### 5-2. Open the control app
+
+```bash
+cd app
+npm start
+```
+
+The **Companion Control** window opens. On first launch it follows your system language (Korean or English); the top-right button switches it.
+
+### 5-3. Start the server and the bot
+
+![Control tab — numbers follow the steps below](images/guide-control.png)
+
+1. Click **① Start all**. The API server starts first; once it's ready, the bot starts.
+2. Watch the two dots at **②**:
+
+   | dot | meaning |
+   |---|---|
+   | grey | stopped |
+   | yellow | starting — the first run downloads the Whisper and embedding models, which takes a few minutes |
+   | green | ready; the bot row shows `Logged in: <bot name>` |
+
+   Scroll down and the server log shows lines like:
+
+   ```
+   로컬 Whisper 모델(...) 로딩 완료 (Device: cuda, Type: float16)
+   Vector DB initialized. Collection: memory_example
+   INFO:     Uvicorn running on http://127.0.0.1:8000
+   LLM warmup: ollama/qwen3:8b (4.5s)
+   ```
+
+   Once `LLM warmup` appears, it's ready for a fast first reply. The character's lore (`lore.txt`) is loaded on the first conversation, logged once as `[Lore] lore.txt를 다시 넣었습니다`. (Server log lines are in Korean; the app's own messages follow the UI language.)
+
+### 5-4. Join a voice channel
+
+1. In Discord, **join a voice channel yourself first**.
+2. In the app, pick the **③ Server** and **④ Voice channel**. If the lists are empty, click ⟳ next to them.
+3. Click **⑤ Join**. The bot joins, and `✓ joined` appears next to the server name.
+4. Check that **⑥ Listening** is on `Auto` (the default). If not, click `Auto`.
+
+> Typing `!join` in a Discord text channel does the same; the bot joins the voice channel of whoever typed it.
+
+### 5-5. First conversation
+
+1. Call it by name and speak, e.g. "**모모, 안녕?**"
+2. The server log shows, in this order:
+
+   ```
+   [VAD] Speech started
+   [듣는중] 모모 안녕
+   [WS] STT Duration: 0.15s (partial 재사용) | endpoint=silence +0.60s
+   [WS] User: 모모 안녕?
+   [WS] Starting LLM stream...
+   [TTS:edge] 1.03s, 15552 bytes (...)
+   [WS] ⚡ Response Latency: 2400ms
+   ```
+
+   (the timings are examples)
+
+   | line | meaning |
+   |---|---|
+   | `[VAD] Speech started` | it heard a voice |
+   | `[듣는중]` | transcribing while you speak |
+   | `User:` | the final transcript |
+   | `Response Latency` | from the end of your speech to the first sound |
+
+3. A few seconds later the bot answers. The app's **Conversation** tab shows the exchange as a chat, with felt latency color-coded under each reply (green under 2.5 s, amber, red over 4 s).
+
+**If there is no reply**, see where the log stopped:
+
+| what the log shows | cause | what to do |
+|---|---|---|
+| no `[VAD]` line | no audio arriving | the bot's `Connect` / `Use Voice Activity` permissions, your Discord input sensitivity |
+| stops after `User:` | LLM problem | is Ollama running, is the model name right |
+| `TTS failed` | voice engine problem | is `edge-tts` 7.3.1 or later (`pip install -U edge-tts`) |
+| `🤫 듣는 중 (reason)` | it decided not to answer | that's expected behaviour; see [section 6](#6-talking-to-it--listening-modes) |
+
+### 5-6. Start from a terminal (without the app)
+
 ```bash
 start_all.bat
 ```
 
-Two windows open.
-
-**API server**
-- The first start downloads the Whisper and embedding models, which takes a few minutes.
-- It's ready when you see `Uvicorn running on http://127.0.0.1:8000`, followed by the LLM and TTS warm-up lines.
-
-**Discord bot**
-- It's connected when you see `Ready! Logged in as ...`.
-
-Or separately:
+Two windows open (API server and Discord bot). Or separately:
 
 ```bash
-python -m uvicorn src.api_server:app --host 127.0.0.1 --port 8000
+venv\Scripts\python -m uvicorn src.api_server:app --host 127.0.0.1 --port 8000
 cd discord_bot && node index.js
 ```
 
-The control app can also start and stop both ([8. Control app](#8-control-app)).
+In this case **the app can't restart the server for you when you switch characters.** It only restarts a server it started itself. If you'll use the app, start the server from the app too.
 
-**First conversation**
-1. Join a voice channel in Discord.
-2. Type `!join` in any text channel. The bot joins your voice channel and starts in the default `auto` mode.
-3. Speak, e.g. "모모, 안녕?"
-4. The server window prints `[WS] User: …` → `Response Latency: …ms`, and you hear the reply.
+> **Don't run the same bot token in two places.** "Start all" in the app plus `node index.js` in a terminal gives you two bots, and every command is answered twice.
 
 ## 6. Talking to it — listening modes
 
@@ -226,20 +339,97 @@ cd app
 npm start
 ```
 
-| tab | what it does |
-|---|---|
-| **제어** (control) | start/stop the API server and the bot, join a server/voice channel, listening mode, **switch character, LLM model and TTS voice**, live logs |
-| **보기** (look) | show it the screen or a window, give it a link, see/clear what it is holding, preview the last capture |
-| **전사** (transcription) | start/stop transcription mode, choose a preset (with VRAM) |
-| **대화** (conversation) | the live conversation as a chat. Each reply carries its **felt latency** (from the moment you stopped speaking to the first sound), color-coded, with endpoint / STT / thinking / voice in the tooltip. You can also type into it |
-| **상태** (state) | the current prompt, recent memory retrievals, long-term memory, and the **turn-taking log** (what it let pass, and why) |
-| **기억** (memory) | memory map: a vector map (t-SNE/PCA) and a mind map. Click a point to highlight what would be retrieved with it |
+There are six tabs. Follow along with the numbered pictures.
 
-The **EN / 한국어** button at the top right switches the UI language. The choice is remembered. Switching reloads the window; the server and bot keep running. This is the app's language, not the language the character speaks.
+### 8-1. Control — start, join, choose
 
-**Switching characters**: pick a pack in the **Character** panel of the control tab and apply. Wake words, prompts and memory are fixed when the server starts, so the app restarts the server. If the app didn't start the server, it only saves the setting; restart the server yourself. Conversation history and memory are kept per character (`data/characters/<id>/`).
+![Control tab](images/guide-control.png)
 
-`npm run dist` builds a portable exe. Keep it inside the project (`app/dist/`), or point `COMPANION_ROOT` at the project.
+| # | name | what it does |
+|---|---|---|
+| ① | Start all | starts the API server, then the bot once the server is ready |
+| ② | Processes | server and bot status (grey off · yellow starting · green ready); each row can be started and stopped on its own |
+| ③ | Server | Discord servers the bot is in; `✓ joined` means it's already in a voice channel there |
+| ④ | Voice channel | the voice channel to join |
+| ⑤ | Join / Leave | join or leave the voice channel; leaving saves the conversation so far to memory |
+| ⑥ | Listening | `Auto` decides itself · `Always` answers everything · `Wake word` only when named · `Stop listening` |
+| ⑦ | Character | pick a pack and apply; the server restarts as that character. History and memory are kept per character |
+| ⑧ | LLM model | cloud (OpenAI, Claude) and local (Ollama, llama.cpp) models. Applying switches immediately and saves to `config.json`; local models take seconds to tens of seconds to load into VRAM |
+| ⑨ | TTS voice | Edge TTS or GPT-SoVITS; the first switch to GPT-SoVITS takes 10–20 s to start its server |
+| ⑩ | Language | UI language (한국어 / English); the server and bot are unaffected |
+
+The API server and bot logs are at the bottom. The small buttons at the top (Processes, Discord …) jump to a panel, and clicking a panel title collapses it.
+
+### 8-2. Look — screen and links
+
+![Look tab](images/guide-look.png)
+
+| # | name | what it does |
+|---|---|---|
+| ① | Source | what to look at: named sources from `screen.sources` in `config.json`, plus currently open windows |
+| ② | Text only | OCR only, done in 1–2 s with 0 VRAM. Unchecked, the vision model (`qwen3-vl:4b`) also describes the screen, which takes tens of seconds; the text arrives first, so you can keep talking meanwhile |
+| ③ | Look | capture now; a preview appears below |
+| ④ | Link | paste an article or page address |
+| ⑤ | Read | read the page; from the next turn the character talks about it |
+| ⑥ | What it is looking at | title and length of what it's holding; it expires on its own after 30 minutes |
+| ⑦ | Clear | drop it now |
+
+**Try it**: paste a news article in ④, click ⑤, then ask out loud "이 기사 어떻게 생각해?"
+
+### 8-3. Transcribe — meeting log
+
+![Transcribe tab](images/guide-transcribe.png)
+
+| # | name | what it does |
+|---|---|---|
+| ① | Text channel | where lines are posted live; `don't post` keeps them in a file only |
+| ② | Model | Whisper preset and its VRAM. `fast` alongside a game, `accurate` (default) for accuracy |
+| ③ | Start recording | transcribes everyone in the voice channel chosen on the Control tab; the character stops listening meanwhile |
+| ④ | Stop recording | ends it and attaches the full log as `.txt`; it's also kept in `data/transcripts/` |
+
+### 8-4. Conversation — live view
+
+- People's lines are on the left, the character's on the right.
+- The number under each reply is the **felt latency** (end of speech → first sound). Hover it for the endpoint / STT / thinking / to-first-sound split.
+- A dashed bubble is something it **didn't answer**, with the reason (e.g. `listened only · 사람들끼리`).
+- A horizontal rule marks where the model or voice changed.
+- Typing in the box at the bottom is handled exactly like speech, and the character answers out loud. A link in the box is read first.
+
+<!-- Reference image slot: docs/images/guide-live.png
+![Conversation tab](images/guide-live.png)
+-->
+
+### 8-5. State — what's on its mind
+
+![State tab](images/guide-state.png)
+
+| # | name | what you see |
+|---|---|---|
+| ① | Chips | current LLM, temperature, STT, TTS and long-term memory count |
+| ② | Personality prompt · tone examples | the pack's `prompt.txt` and `topic.txt`, as is |
+| ③ | Interest keywords | words that come up most in memory and recent talk |
+| ④ | Recently retrieved memory | what each turn searched for and what matched. `↳ nothing relevant` means no memory was attached to that turn |
+| ⑤ | Long-term memory | saved memories (episodes, people, itself). They build up once talk pauses for 5 minutes or the bot leaves |
+| ⑥ | Turn-taking log | `answered` / `listened` / `spoke first`, with the reason. If it didn't answer, this is where you see why |
+| ⑦ | Recent conversation | the short-term history the model receives |
+
+It refreshes every 10 seconds.
+
+### 8-6. Memory — memory map
+
+- **Vector map**: one dot per memory; closer means more similar. Click a dot to see what would be retrieved with it. `Clusters` (t-SNE) shows grouping well; `True distances` (PCA) keeps real distances.
+- **Mind map**: character → per person / episodes / itself. Click a branch name to expand or collapse it.
+- The search box at the top finds memories.
+
+<!-- Reference image slot: docs/images/guide-map.png
+![Memory tab](images/guide-map.png)
+-->
+
+### 8-7. Other
+
+- **Language**: the top-right button. The choice is remembered; switching only reloads the window. This is the app's language, not the language the character speaks.
+- **Switching characters**: the app only restarts a server it started. If you started the server from a terminal, the setting is saved but you restart the server yourself.
+- **Portable exe**: `npm run dist`. Keep the exe inside the project (`app/dist/`), or point `COMPANION_ROOT` at the project.
 
 ## 9. Make your own character
 
@@ -379,6 +569,8 @@ The server launches GPT-SoVITS's `api_v2.py` as a child process (log in `data/lo
 
 ## 11. Reading together — links, screen, Google Docs
 
+For the control app, see the picture in [8-2 Look](#8-2-look--screen-and-links). This section covers configuration and Discord usage.
+
 **Links**
 - While it's in voice, paste a link in a text channel and it reads the article.
 - It forgets the article after 30 minutes.
@@ -410,6 +602,8 @@ The server launches GPT-SoVITS's `api_v2.py` as a child process (log in `data/lo
    - nobody is talking.
 
 ## 12. Transcription mode
+
+For the control app, see the picture in [8-3 Transcribe](#8-3-transcribe--meeting-log).
 
 A meeting logger that runs **fully separate** from the assistant. Starting it stops listening; the character stays silent meanwhile.
 

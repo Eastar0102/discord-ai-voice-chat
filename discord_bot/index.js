@@ -8,16 +8,17 @@ const axios = require('axios');
 // Python 쪽 주소 — transcribe_handler.js와 같은 규칙
 const API_BASE_URL = process.env.API_BASE_URL || 'http://localhost:8000';
 
-// 캐릭터 이름 — config/config.json의 character가 가리키는 팩에서 읽는다 (!<이름> 명령에 쓴다)
+// 캐릭터 이름 — config의 character가 가리키는 팩에서 그때그때 읽는다 (!<이름> 명령에 쓴다).
+// 컨트롤 앱에서 캐릭터를 바꾸면 API 서버만 다시 뜨므로, 봇은 시작할 때 한 번 읽어 두면 안 된다
 const fs = require('fs');
-let CHARACTER_NAME = 'Companion';
-try {
-    const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'config', 'config.json'), 'utf8'));
-    const pack = JSON.parse(fs.readFileSync(
-        path.join(__dirname, '..', 'characters', cfg.character || 'example', 'character.json'), 'utf8'));
-    CHARACTER_NAME = pack.name || CHARACTER_NAME;
-} catch (e) {
-    console.warn('[Config] 캐릭터 이름을 읽지 못했습니다:', e.message);
+function readJson(p) {
+    try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch { return {}; }
+}
+function characterName() {
+    const cfgDir = path.join(__dirname, '..', 'config');
+    const id = readJson(path.join(cfgDir, 'private.json')).character
+        || readJson(path.join(cfgDir, 'config.json')).character || 'example';
+    return readJson(path.join(__dirname, '..', 'characters', id, 'character.json')).name || 'Companion';
 }
 
 const VoiceHandler = require('./voice_handler');
@@ -236,7 +237,7 @@ client.on('messageCreate', async (message) => {
     }
 
            // !auto 명령어 - 스스로 판단해서 답함 (기본)
-           else if (content === '!auto' || content === `!${CHARACTER_NAME}`) {
+           else if (content === '!auto' || content === `!${characterName()}`) {
                if (!voiceHandler.isConnected(message.guild.id)) {
                    await message.reply('먼저 `!join` 명령어로 음성 채널에 연결해주세요.');
                    return;
@@ -300,7 +301,7 @@ client.on('messageCreate', async (message) => {
                try {
                    const success = await voiceHandler.startListening(message.guild.id, message.author.id, 'call');
                    if (success) {
-                       await message.reply(`✅ **호출어 모드**를 시작했습니다. ${CHARACTER_NAME}에게 말을 걸 때 이름을 불러주십시오. \`!stop\`으로 중단할 수 있습니다.`);
+                       await message.reply(`✅ **호출어 모드**를 시작했습니다. ${characterName()}에게 말을 걸 때 이름을 불러주십시오. \`!stop\`으로 중단할 수 있습니다.`);
                    } else {
                        await message.reply('❌ 음성 감지를 시작할 수 없습니다.');
                    }

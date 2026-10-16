@@ -104,7 +104,7 @@ From the moment someone starts speaking to the first sound out. The code is in `
 The code is in `src/memory.py`.
 
 ```
-conversation history (data/conversation_history.jsonl)
+conversation history (data/characters/<id>/conversation_history.jsonl — one per character)
    │  idle 5 min · bot leaves · 20 user lines
    ▼
 flush_episode()
@@ -119,7 +119,7 @@ extract()  ── summarizer model (default: the chat model, format=json)
    ▼
 _reconcile()  ── next to that person's existing facts: add / replace(old) / skip
    ▼
-ChromaDB collection `memory`
+ChromaDB collection `memory_<character id>`
    metadata: type(episode|person|self), who(Discord ID | "self"), name, ts, due, kind(state|experience), about(topic)
 ```
 

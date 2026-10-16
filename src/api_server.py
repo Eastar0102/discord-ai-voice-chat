@@ -456,7 +456,7 @@ async def inspect_memory():
     short_term = []
     try:
         import json as _json
-        path = os.path.join(_BASE_DIR, "data", "conversation_history.jsonl")
+        from llm import HISTORY_PATH as path
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 lines = f.readlines()[-30:]
@@ -821,6 +821,10 @@ app.include_router(llm_router)
 # TTS 엔진 교체 (컨트롤 패널)
 from tts_api import router as tts_router
 app.include_router(tts_router)
+
+# 캐릭터 팩 목록·선택 (컨트롤 패널 — 고르면 서버를 다시 시작해야 적용된다)
+from character_api import router as character_router
+app.include_router(character_router)
 
 
 

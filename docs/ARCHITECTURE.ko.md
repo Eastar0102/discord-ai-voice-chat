@@ -99,7 +99,7 @@ Node 쪽은 거의 생각하지 않습니다. 화자 잠금(한 번에 한 사�
 코드는 `src/memory.py`에 있습니다.
 
 ```
-대화 기록 (data/conversation_history.jsonl)
+대화 기록 (data/characters/<id>/conversation_history.jsonl — 캐릭터마다 따로)
    │  유휴 5분 · 봇 퇴장 · 사람 발화 20줄
    ▼
 flush_episode()
@@ -114,7 +114,7 @@ extract()  ── 요약 모델 (기본: 대화 모델, format=json)
    ▼
 _reconcile()  ── 그 사람의 기존 사실과 나란히: add / replace(old) / skip
    ▼
-ChromaDB 컬렉션 memory
+ChromaDB 컬렉션 memory_<캐릭터 id>
    metadata: type(episode|person|self), who(디스코드 ID | "self"), name, ts, due, kind(state|experience), about(주제)
 ```
 

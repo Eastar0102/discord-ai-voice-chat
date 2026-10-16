@@ -17,6 +17,7 @@
         <button class="tab-btn" data-tab="char">상태</button>
         <button class="tab-btn" data-tab="map">기억</button>
     </nav>
+    <button id="btn-lang" title="언어 / Language">EN</button>
     <button id="btn-start-all" class="primary">▶ 한번에 시작</button>
 </header>
 
@@ -67,6 +68,18 @@
             <span class="proc-detail" id="detail-mode"></span>
         </div>
         <div class="hint" id="discord-hint">봇이 실행되면 서버 목록이 나타납니다.</div>
+    </section>
+
+    <!-- 캐릭터 팩 — 고르면 config에 저장하고 API 서버를 다시 시작한다 -->
+    <section class="panel" id="p-char" data-name="캐릭터">
+        <h2>캐릭터</h2>
+        <div class="discord-row">
+            <label>팩</label>
+            <select id="char-pack" class="llm-select"></select>
+            <button id="btn-char-apply" class="primary">적용 (서버 다시 시작)</button>
+            <span class="proc-detail" id="detail-char"></span>
+        </div>
+        <div class="hint" id="char-pack-hint">API 서버가 실행되면 캐릭터 목록이 나타납니다.</div>
     </section>
 
 
@@ -123,7 +136,7 @@
             <button id="btn-look" class="primary">보기</button>
             <button id="btn-look-clear" class="danger">치우기</button>
         </div>
-        <div class="hint" id="look-hint">소스는 config의 <code>screen.sources</code>에 정의하고,
+        <div class="hint" id="look-hint" data-i18n-html="look-hint">소스는 config의 <code>screen.sources</code>에 정의하고,
             아래 목록에서 지금 열린 창을 바로 고를 수도 있습니다. 가려진 창은 그 자리의 화면이 찍힙니다.</div>
         <div class="ft-teacher" id="look-seen" style="display:none"></div>
         <img id="look-shot" style="display:none" alt="방금 찍은 화면" title="클릭하면 크게 봅니다">
@@ -142,7 +155,7 @@
             <button id="btn-reading-refresh" title="새로고침">&#10227;</button>
             <button id="btn-reading-clear" class="danger">치우기</button>
         </div>
-        <div class="hint">디스코드 텍스트 채널에 링크를 붙이거나 위에서 화면을 보면 여기 걸립니다.
+        <div class="hint" data-i18n-html="reading-hint">디스코드 텍스트 채널에 링크를 붙이거나 위에서 화면을 보면 여기 걸립니다.
             <code>llm.reading_ttl_min</code>(기본 30분)이 지나면 저절로 사라집니다.</div>
     </section>
 </div>
@@ -161,7 +174,7 @@
             <button id="btn-script-stop" class="danger">기록 중지</button>
             <span class="proc-detail" id="detail-script"></span>
         </div>
-        <div class="hint">위 보이스 채널에 있는 모두의 말을 받아적습니다. 고른 텍스트 채널에
+        <div class="hint" data-i18n-html="script-hint">위 보이스 채널에 있는 모두의 말을 받아적습니다. 고른 텍스트 채널에
             실시간으로 올라가고, 중지하면 전체 기록이 .txt로 첨부됩니다.
             기록은 채널 선택과 무관하게 <code>data/transcripts/</code>에도 남습니다.
             캐릭터의 듣기 모드와 동시에 쓸 수 없어, 시작하면 듣기가 멈춥니다.</div>
@@ -175,7 +188,7 @@
         <button id="btn-live-clear">지우기</button>
     </section>
     <section class="panel live-panel">
-        <div id="live-list" class="live-list"></div>
+        <div id="live-list" class="live-list" data-no-i18n></div>
     </section>
     <!-- 타이핑으로 말 걸기. 링크를 넣으면 읽게 한다 — 음성으로는 URL을 말할 수 없다 -->
     <section class="panel live-input">
@@ -200,9 +213,9 @@
     <div class="char-cols">
         <!-- 성격/프롬프트 -->
         <section class="panel char-col">
-            <h2>성격 프롬프트 <span class="sub">config/prompt.txt</span></h2>
+            <h2>성격 프롬프트 <span class="sub">characters/&lt;id&gt;/prompt.txt</span></h2>
             <pre id="char-prompt" class="scrollbox grow2"></pre>
-            <h2>말투 예시 <span class="sub">config/topic.txt</span></h2>
+            <h2>말투 예시 <span class="sub">characters/&lt;id&gt;/topic.txt</span></h2>
             <pre id="char-topic" class="scrollbox grow1"></pre>
         </section>
 
@@ -256,6 +269,7 @@
 <button id="scroller" title="아래로">⌄</button>
 </main>
 
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 <script src="live.js"></script>
 <script src="map.js"></script>

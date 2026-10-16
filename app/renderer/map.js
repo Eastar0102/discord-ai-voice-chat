@@ -6,12 +6,12 @@
 //               → 기억 한 줄씩. 주제가 붙은 기억은 주제 쪽에만 달린다 (중복 방지).
 //               방사형은 한국어 문장이 서로 겹쳐 못 읽어서 가로 트리로 편다.
 const MAP_TYPE = {
-    person: { ko: '사람에 대해 아는 것', color: '#6ea8fe' },
-    episode: { ko: '있었던 일', color: '#f0a868' },
-    self: { ko: '자기 자신', color: '#8ee3b0' },
+    person: { ko: tr('사람에 대해 아는 것'), color: '#6ea8fe' },
+    episode: { ko: tr('있었던 일'), color: '#f0a868' },
+    self: { ko: tr('자기 자신'), color: '#8ee3b0' },
     // 갈래 색으로만 쓴다 — 노드의 type에는 'topic'이 없어서 범례에는 안 나온다
-    topic: { ko: '주제', color: '#c79bf0' },
-    '': { ko: '분류 없음', color: '#767e93' },
+    topic: { ko: tr('주제'), color: '#c79bf0' },
+    '': { ko: tr('분류 없음'), color: '#767e93' },
 };
 let mapData = null, mapView = 'vector', mapLayout = 'tsne';
 let mapSel = -1, mapQuery = '', mapLoading = false;
@@ -37,22 +37,23 @@ async function loadMap() {
     if (mapLoading) return;
     mapLoading = true;
     $('map-hint').textContent = mapLayout === 'tsne'
-        ? '기억을 불러와 덩어리를 계산하는 중...' : '기억을 불러오는 중...';
+        ? tr('기억을 불러와 덩어리를 계산하는 중...') : tr('기억을 불러오는 중...');
     try {
         const d = await window.companion.inspectMemoryMap(mapLayout);
         if (d.error) throw new Error(d.error);
         mapData = d;
         mapSel = -1;
         $('map-hint').textContent = d.nodes.length
-            ? '' : '아직 저장된 기억이 없습니다. 대화가 한 덩어리 끝나면 쌓입니다.';
-        $('map-stat').textContent = d.nodes.length + '개 · 연결 ' + d.edges.length + ' · '
-            + d.dims + '차원 → 2차원 (' + d.layout
-            + (d.explained ? ', ' + Math.round(d.explained * 100) + '% 담김' : '') + ')';
+            ? '' : tr('아직 저장된 기억이 없습니다. 대화가 한 덩어리 끝나면 쌓입니다.');
+        $('map-stat').textContent = tr('{n}개 · 연결 {e} · {dims}차원 → 2차원 ({layout}{explained})', {
+            n: d.nodes.length, e: d.edges.length, dims: d.dims, layout: d.layout,
+            explained: d.explained ? tr(', {p}% 담김', { p: Math.round(d.explained * 100) }) : '',
+        });
         drawMapLegend();
         drawMap();
     } catch (e) {
         $('map-hint').textContent =
-            'API 서버가 꺼져 있거나 예전 버전입니다 — 서버를 다시 시작해 주세요. (' + e.message + ')';
+            tr('API 서버가 꺼져 있거나 예전 버전입니다 — 서버를 다시 시작해 주세요. ({err})', { err: e.message });
     } finally {
         mapLoading = false;
     }
@@ -66,9 +67,10 @@ function drawMapLegend() {
         return '<div class="map-lg"><span class="d" style="background:' + i.color + '"></span>'
             + i.ko + '<b>' + counts[t] + '</b></div>';
     }).join('')
-    + '<div class="map-note">점을 누르면 그 기억과 가까운 것들이 보입니다. 이어진 짝은 서로 거리가 '
-    + mapData.gate + ' 이하 — 검색이 “관련 있다”고 보는 것과 같은 눈금입니다. '
-    + '<b>덩어리 보기</b>는 뭉치는 모양만 맞고, 덩어리 사이 거리는 뜻이 없습니다.</div>';
+    + '<div class="map-note">'
+    + tr('점을 누르면 그 기억과 가까운 것들이 보입니다. 이어진 짝은 서로 거리가 {gate} 이하 — 검색이 “관련 있다”고 보는 것과 같은 눈금입니다. <b>덩어리 보기</b>는 뭉치는 모양만 맞고, 덩어리 사이 거리는 뜻이 없습니다.',
+         { gate: mapData.gate })
+    + '</div>';
 }
 
 function mapDetail() {
@@ -84,12 +86,12 @@ function mapDetail() {
         + (n.about ? ' <span style="color:' + MAP_TYPE.topic.color + '">· ' + mapEsc(n.about) + '</span>' : '')
         + '</h3>'
         + '<div class="txt">' + mapEsc(n.text) + '</div>'
-        + '<div class="meta">기록 ' + (mapEsc(n.ts).replace('T', ' ').slice(0, 16) || '—')
-        + (n.due ? '<br>예정일 ' + mapEsc(n.due) : '') + '</div><h3>가까운 기억</h3>';
+        + '<div class="meta">' + tr('기록 ') + (mapEsc(n.ts).replace('T', ' ').slice(0, 16) || '—')
+        + (n.due ? '<br>' + tr('예정일 ') + mapEsc(n.due) : '') + '</div><h3>' + tr('가까운 기억') + '</h3>';
     html += near.length
         ? '<div class="near">' + near.map((x) => '<div data-i="' + x.j + '"><b>' + x.d + '</b> · '
             + mapEsc(mapCut(mapData.nodes[x.j].text, 70)) + '</div>').join('') + '</div>'
-        : '<div class="map-note">가까운 기억이 없습니다 — 혼자 떨어져 있어, 관련 검색으로는 잘 걸리지 않습니다.</div>';
+        : '<div class="map-note">' + tr('가까운 기억이 없습니다 — 혼자 떨어져 있어, 관련 검색으로는 잘 걸리지 않습니다.') + '</div>';
     box.innerHTML = html;
     box.querySelectorAll('[data-i]').forEach((el2) => {
         el2.onclick = () => { mapSel = +el2.dataset.i; drawMap(); };
@@ -113,8 +115,9 @@ function mapVectorSvg() {
     let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
     s += '<line class="ax" x1="' + pad + '" y1="' + my + '" x2="' + (W - pad) + '" y2="' + my + '"/>';
     s += '<line class="ax" x1="' + mx + '" y1="' + pad + '" x2="' + mx + '" y2="' + (H - pad) + '"/>';
-    s += '<text class="ax-t" x="' + pad + '" y="' + (H - 12) + '">가까울수록 비슷한 이야기 · '
-        + mapData.dims + '차원을 2차원으로 누른 그림 (' + mapData.layout + ')</text>';
+    s += '<text class="ax-t" x="' + pad + '" y="' + (H - 12) + '">'
+        + tr('가까울수록 비슷한 이야기 · {dims}차원을 2차원으로 누른 그림 ({layout})', { dims: mapData.dims, layout: mapData.layout })
+        + '</text>';
     if ($('map-edges').checked) {
         E.forEach((e) => {
             const hot = mapSel >= 0 && (e.a === mapSel || e.b === mapSel);
@@ -149,7 +152,7 @@ function mapMindSvg() {
 
     N.forEach((n, i) => {
         if (n.type === 'person' && free(i)) {
-            const key = n.name || n.who || '이름 없음';
+            const key = n.name || n.who || tr('이름 없음');
             (byPerson[key] = byPerson[key] || []).push(i);
         }
     });
@@ -157,16 +160,16 @@ function mapMindSvg() {
         .forEach((name) => groups.push({ label: name, kind: 'person', items: byPerson[name] }));
     const pick = (t) => N.map((n, i) => (n.type === t && free(i) ? i : -1)).filter((i) => i >= 0);
     const eps = pick('episode').sort((a, b) => (N[b].ts || '').localeCompare(N[a].ts || ''));
-    if (eps.length) groups.push({ label: '있었던 일', kind: 'episode', items: eps });
+    if (eps.length) groups.push({ label: tr('있었던 일'), kind: 'episode', items: eps });
     // 자기 기억은 취향·설정과 '겪은 일'이 성격이 달라 갈래를 나눈다
     const selfs = pick('self');
     const lived = selfs.filter((i) => N[i].kind === 'experience');
     const tastes = selfs.filter((i) => N[i].kind !== 'experience');
-    if (tastes.length) groups.push({ label: '나 자신', kind: 'self', items: tastes });
-    if (lived.length) groups.push({ label: '나에게 있었던 일', kind: 'self', items: lived });
+    if (tastes.length) groups.push({ label: tr('나 자신'), kind: 'self', items: tastes });
+    if (lived.length) groups.push({ label: tr('나에게 있었던 일'), kind: 'self', items: lived });
     const rest = N.map((n, i) => (free(i) && n.type !== 'person' && n.type !== 'episode'
         && n.type !== 'self' ? i : -1)).filter((i) => i >= 0);
-    if (rest.length) groups.push({ label: '그 밖', kind: '', items: rest });
+    if (rest.length) groups.push({ label: tr('그 밖'), kind: '', items: rest });
 
     const ROW = 21, GAP = 22, TOP = 30, HUB_X = 82, GRP_X = 240, LEAF_X = 420, W = 1180;
     let y = TOP, leaves = '';
@@ -180,7 +183,7 @@ function mapMindSvg() {
         const hidden = open ? g.items.length - shown.length : 0;
         shown.forEach((i, k) => {
             const ly = y0 + k * ROW, color = mapType(N[i].type).color;
-            const label = N[i].text + (N[i].due ? '  (예정 ' + N[i].due + ')' : '');
+            const label = N[i].text + (N[i].due ? tr('  (예정 {d})', { d: N[i].due }) : '');
             leaves += '<circle class="nd" data-i="' + i + '" cx="' + LEAF_X + '" cy="' + (ly - 4)
                 + '" r="3.2" fill="' + color + '"/>';
             leaves += '<text class="leaf' + (mapHit(N[i]) ? '' : ' dim') + (i === mapSel ? ' sel' : '')
@@ -190,7 +193,7 @@ function mapMindSvg() {
         if (hidden > 0) {
             const ly = y0 + shown.length * ROW;
             leaves += '<text class="leaf more" data-more="' + mapEsc(g.label) + '" x="' + (LEAF_X + 10)
-                + '" y="' + ly + '">+ ' + hidden + '개 더 보기</text>';
+                + '" y="' + ly + '">' + tr('+ {n}개 더 보기', { n: hidden }) + '</text>';
         }
         const rows = Math.max(1, shown.length + (hidden > 0 ? 1 : 0));
         anchors.push({
@@ -211,7 +214,7 @@ function mapMindSvg() {
         pre += '<text class="grp grp-tap" data-grp="' + mapEsc(g.label) + '" x="' + (GRP_X + 6)
             + '" y="' + (g.y + 1) + '">' + (g.open ? '▾ ' : '▸ ') + mapEsc(g.label) + '</text>';
         pre += '<text class="grp-n grp-tap" data-grp="' + mapEsc(g.label) + '" x="' + (GRP_X + 6)
-            + '" y="' + (g.y + 15) + '">' + g.n + '개</text>';
+            + '" y="' + (g.y + 15) + '">' + tr('{n}개', { n: g.n }) + '</text>';
         if (!g.open) return;
         pre += '<path class="lk" d="M' + (GRP_X + 104) + ',' + g.y + ' C' + (LEAF_X - 46) + ',' + g.y
             + ' ' + (LEAF_X - 46) + ',' + g.y0 + ' ' + (LEAF_X - 12) + ',' + (g.y0 - 4)

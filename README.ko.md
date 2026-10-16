@@ -56,7 +56,7 @@ discord-ai-voice-chat/
 │  ├─ websocket_handler.py     턴 루프: 말끝·STT·게이트·스트리밍·TTS 큐·인사·먼저 말 걸기·기억 저장
 │  ├─ llm.py                   프롬프트 조립, 기록 정규화, 판정, 태그 해석
 │  ├─ memory.py                에피소드 추출, 사실 갱신, 검색
-│  ├─ character.py             캐릭터 팩 읽기
+│  ├─ character.py · character_api.py   캐릭터 팩 읽기 · 목록·전환
 │  ├─ lore.py                  팩의 lore.txt에서 세계관 검색
 │  ├─ vad.py · stt.py · tts.py 오디오 단계 (providers/를 감싼 얇은 층)
 │  ├─ providers/
@@ -70,9 +70,9 @@ discord-ai-voice-chat/
 │  └─ transcribe_api.py        전사 모드 전용 Whisper 인스턴스
 ├─ characters/example/         샘플 캐릭터 팩 ("모모")
 ├─ config/config.json          모든 설정 (섹션마다 _comment 설명)
-├─ app/                        Electron 컨트롤 앱
+├─ app/                        Electron 컨트롤 앱 (한국어 / 영어 화면)
 ├─ scripts/                    google_login.py · ingest_lore.py · memory_map.py
-└─ data/                       실행하면 생김: 기록·기억 DB·지표 (git 제외)
+└─ data/                       실행하면 생김: 캐릭터별 기록(characters/<id>/)·기억 DB·지표 (git 제외)
 ```
 
 턴 하나가 흘러가는 과정, 기억의 일생, provider 추가하는 법은 **[docs/ARCHITECTURE.ko.md](docs/ARCHITECTURE.ko.md)**에 있습니다.

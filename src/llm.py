@@ -154,7 +154,7 @@ def prompt_for_model(model: str):
         _profile_cache[path] = read_config_file(path if os.path.isabs(path) else os.path.join(base_dir, path))
     return _profile_cache[path], ""
 
-HISTORY_PATH = os.path.join(base_dir, "data", "conversation_history.jsonl")
+HISTORY_PATH = character.data_path("conversation_history.jsonl")   # 캐릭터마다 따로
 # 최근 20줄(약 10왕복). 10줄일 땐 끊긴 발화 조각 몇 개만으로 맥락이 밀려났다
 HISTORY_LIMIT = 20
 HISTORY_STEP = 10      # cache 배치에서 창이 한 번에 밀리는 줄 수 (load_conversation_history)

@@ -12,7 +12,7 @@
   임베딩 거리로는 "골드 2 → 플래티넘"(137), "짜장면 → 짬뽕"(67) 같은 갱신·모순을 잡을 수 없었다
 - 불러올 때: 말하는 사람의 사실과 캐릭터 자기 설정은 검색 없이 늘 넣고(핵심 기억), 있었던 일은
   관련도 + "어제/지난주" 같은 시간 + 가장 최근 대화로 고른다
-- 저장소는 ChromaDB 컬렉션 memory (metadata: type, who, name, ts, due, kind, about)
+- 저장소는 ChromaDB 컬렉션 memory_<캐릭터> (metadata: type, who, name, ts, due, kind, about)
 - 긴 대화에서 20줄 창 밖으로 밀려난 이번 세션 앞부분은 session summary로 따로 요약해 둔다
 - 요약기는 기본으로 지금 대화에 쓰는 모델을 따라간다 (memory.summarizer_model로 따로 지정 가능)
 """
@@ -37,12 +37,13 @@ _mem_cfg = config.get("memory", {})
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
-HISTORY_PATH = os.path.join(DATA_DIR, "conversation_history.jsonl")
-STATE_PATH = os.path.join(DATA_DIR, "memory_state.json")
-SESSION_SUMMARY_PATH = os.path.join(DATA_DIR, "session_summary.json")
+# 대화 기록·기억 상태는 캐릭터마다 따로, 사람 목록은 함께 (character.py 참고)
+HISTORY_PATH = character.data_path("conversation_history.jsonl")
+STATE_PATH = character.data_path("memory_state.json")
+SESSION_SUMMARY_PATH = character.data_path("session_summary.json")
 PEOPLE_PATH = os.path.join(DATA_DIR, "people.json")
 # 사람이 읽는 백업 (벡터 DB가 깨져도 남도록)
-LONG_TERM_FILE = os.path.join(DATA_DIR, "long_term_memory.txt")
+LONG_TERM_FILE = character.data_path("long_term_memory.txt")
 
 # 관련도 게이트 — lore.py와 같은 방식 (ko-sroberta + ChromaDB L2). 실측:
 # 관련 기억 톱매칭 ~60~100 ("짜장면 짬뽕" 60, "좋아하는 음식" 96),
@@ -535,7 +536,7 @@ def _time_window(text: str):
 class MemoryManager:
     def __init__(self):
         # 임베딩 모델은 여기서 한 번 로드해 모두 공유한다 (lore가 self.vector_db.embedding_model을 쓴다)
-        self.store = VectorDB(collection_name="memory")
+        self.store = VectorDB(collection_name=character.MEMORY_COLLECTION)
         self.vector_db = self.store
         # 최근 RAG 검색 로그 (앱의 '상태' 탭에서 "지금 무엇을 참조하는지" 표시용)
         self.recent_retrievals = deque(maxlen=20)

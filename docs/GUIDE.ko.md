@@ -237,12 +237,16 @@ npm start
 
 | 탭 | 하는 일 |
 |---|---|
-| **제어** | API 서버·봇 켜고 끄기, 서버·음성 채널 골라 입장, 듣기 모드, **LLM 모델과 TTS 목소리 바꾸기**, 실시간 로그 |
+| **제어** | API 서버·봇 켜고 끄기, 서버·음성 채널 골라 입장, 듣기 모드, **캐릭터·LLM 모델·TTS 목소리 바꾸기**, 실시간 로그 |
 | **보기** | 화면·창 골라 보여 주기, 링크 읽히기, 지금 들고 있는 것 확인·치우기, 방금 찍은 화면 미리보기 |
 | **전사** | 전사 모드 시작·중지, 프리셋 고르기 (VRAM 표시) |
 | **대화** | 실시간 대화를 채팅처럼 표시합니다. 대답마다 **체감 지연**(말이 끝난 순간부터 첫 소리까지)이 색으로 붙고, 툴팁에 말끝·STT·생각·목소리 시간이 나뉩니다. 아래 입력창으로 글을 보낼 수 있습니다 |
 | **상태** | 지금 프롬프트, 최근 기억 검색 결과, 장기 기억 목록, **말할 차례 판단 기록**(답하지 않은 말과 이유) |
 | **기억** | 기억 지도: 벡터 지도(t-SNE/PCA)와 마인드맵. 점을 누르면 검색에 같이 걸리는 기억이 표시됩니다 |
+
+오른쪽 위 **EN / 한국어** 버튼으로 화면 언어를 바꿉니다. 고른 언어는 기억됩니다. 바꾸면 화면을 다시 불러오지만, 서버와 봇은 그대로 돕니다. 캐릭터가 말하는 언어가 아니라 앱 화면의 언어입니다.
+
+**캐릭터 바꾸기**: 제어 탭의 **캐릭터** 패널에서 팩을 고르고 적용합니다. 호출어·프롬프트·기억은 서버가 뜰 때 정해지므로, 앱이 서버를 다시 시작합니다. 앱이 띄운 서버가 아니면 설정만 저장하니 서버를 직접 다시 시작하세요. 대화 기록과 기억은 캐릭터마다 따로 쌓입니다 (`data/characters/<id>/`).
 
 포터블 exe로 만들려면 `npm run dist`를 실행합니다. exe는 프로젝트 폴더 안(`app/dist/`)에 두거나 `COMPANION_ROOT` 환경변수로 위치를 알려 주세요.
 
@@ -252,7 +256,7 @@ npm start
 xcopy /E /I characters\example characters\mychar
 ```
 
-`config/config.json`:
+`config/config.json`에서 고르거나, 컨트롤 앱의 캐릭터 패널에서 고릅니다:
 
 ```json
 "character": "mychar"
@@ -317,11 +321,7 @@ xcopy /E /I characters\example characters\mychar
 ```
 
 - 빈 줄로 블록을 나눕니다. `#`로 시작하는 줄은 주석입니다.
-- 고친 뒤에는 **서버를 끄고** 다시 넣습니다:
-
-  ```bash
-  python scripts/ingest_lore.py
-  ```
+- 고친 뒤 서버를 다시 시작하면 바뀐 것을 저절로 다시 넣습니다. 서버를 끈 채로 바로 넣으려면 `python scripts/ingest_lore.py`를 실행합니다.
 
 ### 만든 사람 알려 주기
 
@@ -459,7 +459,7 @@ xcopy /E /I characters\example characters\mychar
 - 파일로 보려면 `python scripts/memory_map.py --tsne --open`을 실행합니다.
 
 **지우기**
-- 처음부터 다시 하려면 서버를 끄고 `data/` 폴더를 지웁니다. 기록·기억·지표가 모두 사라집니다.
+- 한 캐릭터만 처음부터 다시 하려면 서버를 끄고 `data/characters/<id>/`를 지웁니다. 다만 기억 DB(`data/chroma_db`)의 `memory_<id>` 컬렉션은 남습니다. 전부 지우려면 `data/` 폴더를 통째로 지웁니다 (기록·기억·지표·사람 목록이 모두 사라짐).
 
 > 서버가 켜져 있는 동안 다른 프로세스로 `data/chroma_db`를 열지 마세요. 같은 저장소를 두 프로세스가 열면 읽기가 깨집니다.
 
@@ -495,4 +495,4 @@ xcopy /E /I characters\example characters\mychar
 | `CUDA` / `cudnn` 오류 | PyTorch CUDA 빌드와 cuDNN 9 설치. 안 되면 `stt.whisper_local.device: "cpu"`, `compute_type: "int8"` |
 | Ollama 연결 거부 | `ollama serve`가 떠 있는지, `llm.ollama.base_url` |
 | 기억 관련 `Error finding id` | 서버가 켜진 채 다른 스크립트가 `data/chroma_db`를 열었습니다. 하나만 열리게 하세요 |
-| 세계관을 고쳤는데 반영이 안 됨 | 서버를 끄고 `python scripts/ingest_lore.py` |
+| 세계관을 고쳤는데 반영이 안 됨 | 서버를 다시 시작 (바뀐 lore.txt를 저절로 다시 넣음) |

@@ -125,7 +125,9 @@ def main():
                     help="다른 chroma_db 경로를 읽는다 (서버가 켜져 있을 때 복사본을 보는 용도)")
     args = ap.parse_args()
 
-    collection = "memory"
+    sys.path.insert(0, os.path.join(BASE, "src"))
+    import character as _ch
+    collection = _ch.MEMORY_COLLECTION
     alive = server_alive() and not args.db
     if args.archive or not alive:
         if alive:

@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 // 캐릭터 이름 — API 서버가 캐릭터 팩에서 읽어 /inspect/state로 알려 준다 (live.js · map.js도 쓴다)
-let CHAR_NAME = '캐릭터';
+let CHAR_NAME = tr('캐릭터');
 function refreshCharName() {
     window.companion.inspectState()
         .then((s) => { if (s && s.character) CHAR_NAME = s.character; })
@@ -35,25 +35,26 @@ window.companion.onStatus(({ api, bot, procs }) => {
     // API 서버: 프로세스 살아있음 + 헬스 통과 = on, 프로세스만 = starting
     if (api) {
         setDot('dot-api', 'on');
-        $('detail-api').textContent = '실행 중 (정상)';
+        $('detail-api').textContent = tr('실행 중 (정상)');
     } else if (procs.server) {
         setDot('dot-api', 'starting');
-        $('detail-api').textContent = '기동 중 (모델 로딩)...';
+        $('detail-api').textContent = tr('기동 중 (모델 로딩)...');
     } else {
         setDot('dot-api', 'off');
-        $('detail-api').textContent = '중지됨';
+        $('detail-api').textContent = tr('중지됨');
     }
 
     // 봇
     if (bot && bot.ready) {
         setDot('dot-bot', 'on');
-        $('detail-bot').textContent = `로그인: ${bot.user}` + (bot.connected.length ? ` · 음성 참여 중 (${bot.connected.length})` : '');
+        $('detail-bot').textContent = tr('로그인: {user}', { user: bot.user })
+            + (bot.connected.length ? tr(' · 음성 참여 중 ({n})', { n: bot.connected.length }) : '');
     } else if (procs.bot) {
         setDot('dot-bot', 'starting');
-        $('detail-bot').textContent = '기동 중...';
+        $('detail-bot').textContent = tr('기동 중...');
     } else {
         setDot('dot-bot', 'off');
-        $('detail-bot').textContent = '중지됨';
+        $('detail-bot').textContent = tr('중지됨');
     }
 
     // 봇이 준비됐는데 길드 목록이 비어 있으면 자동 로드
@@ -64,6 +65,10 @@ window.companion.onStatus(({ api, bot, procs }) => {
     if (!api) llmLoaded = false;
     if (api && !ttsLoaded) loadTtsEngines();
     if (!api) ttsLoaded = false;
+    // 캐릭터 목록 — 서버가 다시 뜨면(캐릭터를 바꾼 뒤) 이름까지 다시 읽는다
+    ownsServer = !!procs.server;
+    if (api && !charLoaded) loadCharacters();
+    if (!api) charLoaded = false;
     if (api && !scriptLoaded) { scriptLoaded = true; loadScriptPresets(); }
     if (!api) scriptLoaded = false;
     if (api && !lookLoaded) { lookLoaded = true; loadLookSources(); }
@@ -79,7 +84,7 @@ $('btn-start-all').onclick = async () => {
     $('btn-start-all').disabled = true;
     try {
         const r = await window.companion.startAll();
-        if (r && !r.ok) appendLog('server', `\n[한번에 시작 실패] ${r.error}\n`);
+        if (r && !r.ok) appendLog('server', '\n' + tr('[한번에 시작 실패] {err}', { err: r.error }) + '\n');
     } finally {
         $('btn-start-all').disabled = false;
     }
@@ -100,7 +105,7 @@ async function refreshGuilds() {
         for (const g of currentGuilds) {
             const o = document.createElement('option');
             o.value = g.id;
-            o.textContent = g.name + (g.connected ? ' ✓ 참여 중' : '');
+            o.textContent = g.name + (g.connected ? tr(' ✓ 참여 중') : '');
             sel.appendChild(o);
         }
         if (prev && currentGuilds.some(g => g.id === prev)) sel.value = prev;
@@ -108,10 +113,10 @@ async function refreshGuilds() {
         updateModeButtons();
         $('discord-hint').textContent = currentGuilds.length
             ? ''
-            : '봇이 속한 서버가 없습니다. 초대 링크로 봇을 서버에 먼저 초대하세요.';
+            : tr('봇이 속한 서버가 없습니다. 초대 링크로 봇을 서버에 먼저 초대하세요.');
     } catch {
         guildsLoaded = false;
-        $('discord-hint').textContent = '봇이 실행되면 서버 목록이 나타납니다.';
+        $('discord-hint').textContent = tr('봇이 실행되면 서버 목록이 나타납니다.');
     }
 }
 
@@ -135,7 +140,7 @@ function fillChannels() {
     // 컨트롤 앱에는 그 맥락이 없다). 그래서 "알아서"가 아니라 있는 그대로 적는다
     const t = $('script-text-channel');
     const prevText = t.value;
-    t.innerHTML = '<option value="">(올리지 않음 — 파일로만 저장)</option>';
+    t.innerHTML = '<option value="">' + tr('(올리지 않음 — 파일로만 저장)') + '</option>';
     for (const c of g.textChannels || []) {
         const o = document.createElement('option');
         o.value = c.id;
@@ -151,8 +156,8 @@ function updateModeButtons() {
     $('btn-mode-auto').classList.toggle('active', mode === 'auto');
     $('btn-mode-always').classList.toggle('active', mode === 'always');
     $('btn-mode-call').classList.toggle('active', mode === 'call');
-    const MODE_KO = { auto: '자동 (스스로 판단)', always: '항상 반응', call: '호출어' };
-    $('detail-mode').textContent = mode ? `현재: ${MODE_KO[mode] || mode}` : '';
+    const MODE_KO = { auto: tr('자동 (스스로 판단)'), always: tr('항상 반응'), call: tr('호출어') };
+    $('detail-mode').textContent = mode ? tr('현재: {x}', { x: MODE_KO[mode] || mode }) : '';
     updateScriptButtons();
 }
 
@@ -171,21 +176,21 @@ async function sayText() {
     const hint = $('live-hint');
     try {
         if (url) {
-            hint.textContent = '링크를 읽는 중…';
+            hint.textContent = tr('링크를 읽는 중…');
             const r = await window.companion.lookReadUrl(url);
             if (r && (r.detail || r.error)) throw new Error(r.detail || r.error);
-            hint.textContent = `읽었습니다 — ${r.title || r.url} (${r.chars}자)`;
+            hint.textContent = tr('읽었습니다 — {title} ({n}자)', { title: r.title || r.url, n: r.chars });
         }
         // 링크만 붙였으면 한마디 하게 하고, 말이 같이 있으면 그 말을 보낸다
         const msg = rest || (url ? '(지금 보고 있는 글을 방금 읽었다. 한두 가지를 짚어 말한다)' : '');
         if (msg) {
-            if (!g) { hint.textContent = '서버를 먼저 고르세요 (제어 탭).'; return; }
+            if (!g) { hint.textContent = tr('서버를 먼저 고르세요 (제어 탭).'); return; }
             const r = await window.companion.talk(g.id, msg);
             if (r && r.error) throw new Error(r.error);
         }
         box.value = '';
     } catch (e) {
-        hint.textContent = '보내지 못했습니다: ' + (e.message || e);
+        hint.textContent = tr('보내지 못했습니다: ') + (e.message || e);
     } finally {
         $('btn-say').disabled = false;
     }
@@ -252,7 +257,7 @@ function setupControlLayout() {
         if (!shown) return;
         const down = !atBottom(t);
         btn.textContent = down ? '⌄' : '⌃';
-        btn.title = down ? '아래로' : '위로';
+        btn.title = down ? tr('아래로') : tr('위로');
     }
     btn.onclick = () => {
         const t = activeStack();
@@ -287,13 +292,13 @@ async function loadLookSources() {
         named = r.sources || {};
         def = r.default;
     } catch {
-        sel.innerHTML = '<option value="">(API 서버 꺼짐)</option>';
+        sel.innerHTML = '<option value="">' + tr('(API 서버 꺼짐)') + '</option>';
         return;
     }
     for (const name of Object.keys(named)) {
         const o = document.createElement('option');
         o.value = 'src:' + name;
-        o.textContent = name + (name === def ? ' (기본)' : '');
+        o.textContent = name + (name === def ? tr(' (기본)') : '');
         sel.appendChild(o);
     }
     try {
@@ -301,7 +306,7 @@ async function loadLookSources() {
         const wins = (w.windows || []).filter(x => !x.minimized);
         if (wins.length) {
             const g = document.createElement('optgroup');
-            g.label = '지금 열린 창';
+            g.label = tr('지금 열린 창');
             for (const x of wins) {
                 const o = document.createElement('option');
                 o.value = 'win:' + x.title;
@@ -333,20 +338,21 @@ $('btn-look').onclick = async () => {
 
     const seen = $('look-seen');
     $('btn-look').disabled = true;
-    $('look-hint').textContent = mode === 'ocr' ? '읽는 중…' : '보는 중… (VLM은 10~20초 걸립니다)';
+    $('look-hint').textContent = mode === 'ocr' ? tr('읽는 중…') : tr('보는 중… (VLM은 10~20초 걸립니다)');
     try {
         const r = await window.companion.lookNow(body);
         if (r && r.error) throw new Error(r.error);
         const took = Object.entries(r.took || {}).map(([k, x]) => `${k} ${x}s`).join(' · ');
-        const dropped = r.ocr_dropped ? ` (깨진 줄 ${r.ocr_dropped}개 버림)` : '';
-        $('look-hint').textContent = `${r.source} · 글자 ${r.ocr_lines}줄${dropped} · ${took}`;
+        const dropped = r.ocr_dropped ? tr(' (깨진 줄 {n}개 버림)', { n: r.ocr_dropped }) : '';
+        $('look-hint').textContent = tr('{source} · 글자 {n}줄{dropped} · {took}',
+                                        { source: r.source, n: r.ocr_lines, dropped, took });
         seen.style.display = 'block';
-        seen.textContent = r.seen || `글자 ${r.ocr_lines}줄을 읽었습니다 (설명 없음 — 글자만 모드)`;
+        seen.textContent = r.seen || tr('글자 {n}줄을 읽었습니다 (설명 없음 — 글자만 모드)', { n: r.ocr_lines });
         // 찍힌 그림을 보여 준다 — 보여주려던 화면과 찍힌 화면이 다른 일이 있었다 (10-01).
         // 캐시를 피하려고 시각을 붙인다
         showShot();
     } catch (e) {
-        $('look-hint').textContent = '못 봤습니다: ' + (e.message || e);
+        $('look-hint').textContent = tr('못 봤습니다: ') + (e.message || e);
         seen.style.display = 'none';
     } finally {
         $('btn-look').disabled = false;
@@ -372,12 +378,12 @@ async function loadReading() {
     try {
         const r = await window.companion.lookReading();
         const d = r && r.reading;
-        if (!d) { el.textContent = '아직 없습니다.'; return; }
+        if (!d) { el.textContent = tr('아직 없습니다.'); return; }
         const when = (d.at || '').replace('T', ' ').slice(0, 16);
-        el.textContent = `${d.title || d.url} · ${d.chars}자 · ${when}`;
+        el.textContent = tr('{what} · {n}자 · {when}', { what: d.title || d.url, n: d.chars, when });
         el.title = d.url || '';
     } catch {
-        el.textContent = 'API 서버가 실행 중이어야 확인됩니다.';
+        el.textContent = tr('API 서버가 실행 중이어야 확인됩니다.');
     }
 }
 
@@ -385,11 +391,11 @@ async function readUrlNow() {
     const url = $('read-url').value.trim();
     const el = $('reading-what');
     if (!/^https?:\/\/\S+$/i.test(url)) {
-        el.textContent = 'http(s)로 시작하는 주소를 넣으세요.';
+        el.textContent = tr('http(s)로 시작하는 주소를 넣으세요.');
         return;
     }
     $('btn-read-url').disabled = true;
-    el.textContent = '읽는 중…';
+    el.textContent = tr('읽는 중…');
     try {
         const r = await window.companion.lookReadUrl(url);
         // Python이 400/502를 detail로 돌려준다 (내부 주소·본문 없음 등)
@@ -399,7 +405,7 @@ async function readUrlNow() {
         $('look-shot').style.display = 'none';   // 화면이 아니라 글을 보고 있다
         await loadReading();
     } catch (e) {
-        el.textContent = '못 읽었습니다: ' + (e.message || e);
+        el.textContent = tr('못 읽었습니다: ') + (e.message || e);
     } finally {
         $('btn-read-url').disabled = false;
     }
@@ -419,7 +425,7 @@ $('btn-look-clear').onclick = async () => {
     await window.companion.lookClear().catch(() => {});
     $('look-seen').style.display = 'none';
     $('look-shot').style.display = 'none';
-    $('look-hint').textContent = '보고 있던 것을 치웠습니다.';
+    $('look-hint').textContent = tr('보고 있던 것을 치웠습니다.');
 };
 
 // ── 전사 모드 ───────────────────────────────────────────────
@@ -430,7 +436,7 @@ function updateScriptButtons() {
     const on = !!(g && g.transcribing);
     $('btn-script-start').disabled = on;
     $('btn-script-stop').disabled = !on;
-    $('detail-script').textContent = on ? '기록 중' : '';
+    $('detail-script').textContent = on ? tr('기록 중') : '';
 }
 
 async function loadScriptPresets() {
@@ -446,7 +452,7 @@ async function loadScriptPresets() {
             o.value = p.name;
             // label이 이미 "정확도 우선 (large-v3, beam 5)"처럼 모델을 담고 있어 경로는 뺀다
             const vram = p.vram_mb ? ` · ${(p.vram_mb / 1024).toFixed(1)}GB` : '';
-            o.textContent = (p.label || p.name) + vram + (p.is_default ? ' (기본)' : '');
+            o.textContent = (p.label || p.name) + vram + (p.is_default ? tr(' (기본)') : '');
             o.title = p.model || '';
             sel.appendChild(o);
         }
@@ -454,7 +460,7 @@ async function loadScriptPresets() {
         if (want && items.some(p => p.name === want)) sel.value = want;
     } catch {
         // API 서버가 안 떠 있으면 고를 수 없다 — 봇이 기본 프리셋을 쓴다
-        sel.innerHTML = '<option value="">(API 서버 꺼짐 — 기본값)</option>';
+        sel.innerHTML = '<option value="">' + tr('(API 서버 꺼짐 — 기본값)') + '</option>';
     }
 }
 
@@ -462,7 +468,7 @@ $('btn-script-start').onclick = async () => {
     const g = selectedGuild();
     const voiceChannelId = $('channel').value;
     if (!g || !voiceChannelId) return;
-    $('detail-script').textContent = '모델 불러오는 중…';
+    $('detail-script').textContent = tr('모델 불러오는 중…');
     const r = await window.companion.transcribeControl({
         action: 'start',
         guildId: g.id,
@@ -472,7 +478,7 @@ $('btn-script-start').onclick = async () => {
     });
     if (r && r.error) {
         $('detail-script').textContent = '';
-        appendLog('bot', `\n[기록 시작 실패] ${r.error}\n`);
+        appendLog('bot', '\n' + tr('[기록 시작 실패] {err}', { err: r.error }) + '\n');
     }
     setTimeout(refreshGuilds, 800);
 };
@@ -481,7 +487,7 @@ $('btn-script-stop').onclick = async () => {
     const g = selectedGuild();
     if (!g) return;
     const r = await window.companion.transcribeControl({ action: 'stop', guildId: g.id });
-    if (r && r.error) appendLog('bot', `\n[기록 중지 실패] ${r.error}\n`);
+    if (r && r.error) appendLog('bot', '\n' + tr('[기록 중지 실패] {err}', { err: r.error }) + '\n');
     setTimeout(refreshGuilds, 800);
 };
 
@@ -492,7 +498,7 @@ $('btn-join').onclick = async () => {
     const channelId = $('channel').value;
     if (!channelId) return;
     const r = await window.companion.join(channelId);
-    if (r.error) appendLog('bot', `\n[참여 실패] ${r.error}\n`);
+    if (r.error) appendLog('bot', '\n' + tr('[참여 실패] {err}', { err: r.error }) + '\n');
     setTimeout(refreshGuilds, 800);
 };
 
@@ -507,7 +513,7 @@ async function setMode(mode) {
     const g = selectedGuild();
     if (!g) return;
     const r = await window.companion.setMode(g.id, mode);
-    if (r.error) appendLog('bot', `\n[모드 변경 실패] ${r.error}\n`);
+    if (r.error) appendLog('bot', '\n' + tr('[모드 변경 실패] {err}', { err: r.error }) + '\n');
     setTimeout(refreshGuilds, 500);
 }
 
@@ -538,12 +544,12 @@ async function loadLlmModels() {
         data = await window.companion.llmModels();
     } catch {
         llmLoaded = false;
-        $('llm-hint').textContent = 'API 서버가 실행되면 모델 목록이 나타납니다.';
+        $('llm-hint').textContent = tr('API 서버가 실행되면 모델 목록이 나타납니다.');
         return;
     }
     if (!data.current) {
         // 모델 교체 기능 추가 전에 띄운 서버 (404) — 재시작하면 생긴다
-        $('llm-hint').textContent = 'API 서버가 모델 교체를 지원하지 않습니다. 서버를 재시작하세요.';
+        $('llm-hint').textContent = tr('API 서버가 모델 교체를 지원하지 않습니다. 서버를 재시작하세요.');
         return;
     }
 
@@ -562,33 +568,33 @@ async function loadLlmModels() {
         sel.appendChild(group);
     };
 
-    addGroup('클라우드 (OpenAI)', 'openai_chat', data.openai_chat.models, m => m.model);
+    addGroup(tr('클라우드 (OpenAI)'), 'openai_chat', data.openai_chat.models, m => m.model);
     if (data.claude) {
-        addGroup('클라우드 (Claude)', 'claude', data.claude.available ? data.claude.models : [],
+        addGroup(tr('클라우드 (Claude)'), 'claude', data.claude.available ? data.claude.models : [],
                  m => m.model);
     }
-    addGroup('로컬 (Ollama)', 'ollama', data.ollama.models, m => {
-        if (m.offline) return `${m.model}  (Ollama 꺼짐 — 선택하면 자동 실행)`;
+    addGroup(tr('로컬 (Ollama)'), 'ollama', data.ollama.models, m => {
+        if (m.offline) return tr('{model}  (Ollama 꺼짐 — 선택하면 자동 실행)', { model: m.model });
         const parts = [m.parameter_size, gb(m.size)].filter(Boolean).join(', ');
         // 추론 전용 모델(qwen3:4b, deepseek-r1 등)은 think=false를 무시해 사고 과정이 답변에
         // 섞이거나 토큰 한도를 사고로 다 써서 빈 응답이 나온다 — 음성 대화용으로 부적합
-        return `${m.model}  (${parts})` + (m.thinking ? ' ⚠ 추론 모델' : '') + (m.loaded ? ' ● 로드됨' : '');
+        return `${m.model}  (${parts})` + (m.thinking ? tr(' ⚠ 추론 모델') : '') + (m.loaded ? tr(' ● 로드됨') : '');
     });
     // Ollama로는 못 돌리는 MoE(전문가 층을 RAM에 둔다) — 첫 로딩은 17GB를 읽느라 수십 초
     if (data.llamacpp && data.llamacpp.available) {
-        addGroup('로컬 (llama.cpp)', 'llamacpp', data.llamacpp.models.filter(m => !m.missing),
-                 m => `${m.model}  (전문가 층 CPU)`);
+        addGroup(tr('로컬 (llama.cpp)'), 'llamacpp', data.llamacpp.models.filter(m => !m.missing),
+                 m => tr('{model}  (전문가 층 CPU)', { model: m.model }));
     }
 
     const cur = data.current;
     sel.value = JSON.stringify({ provider: cur.provider, model: cur.model });
-    $('detail-llm').textContent = `현재: ${describeLlm(cur)}`;
+    $('detail-llm').textContent = tr('현재: {x}', { x: describeLlm(cur) });
 
     const hints = [];
     if (data.claude && !data.claude.available) hints.push(data.claude.error);
-    if (!data.ollama.available) hints.push('Ollama가 꺼져 있습니다 — 로컬 모델을 선택해 적용하면 자동으로 실행합니다.');
-    else if (!data.ollama.models.length) hints.push('설치된 Ollama 모델이 없습니다. (ollama pull <모델>)');
-    else hints.push('로컬 모델은 STT(Whisper)와 같은 GPU를 씁니다 — 모델 크기만큼 VRAM이 추가로 필요합니다.');
+    if (!data.ollama.available) hints.push(tr('Ollama가 꺼져 있습니다 — 로컬 모델을 선택해 적용하면 자동으로 실행합니다.'));
+    else if (!data.ollama.models.length) hints.push(tr('설치된 Ollama 모델이 없습니다. (ollama pull <모델>)'));
+    else hints.push(tr('로컬 모델은 STT(Whisper)와 같은 GPU를 씁니다 — 모델 크기만큼 VRAM이 추가로 필요합니다.'));
     $('llm-hint').textContent = hints.join(' ');
 }
 
@@ -602,13 +608,13 @@ $('btn-llm-apply').onclick = async () => {
     llmBusy = true;
     $('btn-llm-apply').disabled = true;
     $('detail-llm').textContent = (provider === 'ollama' || provider === 'llamacpp')
-        ? `${model} 로딩 중 (Ollama 실행·VRAM 로딩, 수 초~수십 초)...`
-        : `${model}(으)로 교체 중...`;
+        ? tr('{model} 로딩 중 (Ollama 실행·VRAM 로딩, 수 초~수십 초)...', { model })
+        : tr('{model}(으)로 교체 중...', { model });
     let error = null;
     try {
         const r = await window.companion.llmSelect(provider, model);
         if (r.detail) error = r.detail; // FastAPI HTTPException
-        else appendLog('server', `\n[LLM 교체] ${describeLlm(r.current)}\n`);
+        else appendLog('server', '\n' + tr('[LLM 교체] {x}', { x: describeLlm(r.current) }) + '\n');
     } catch (e) {
         error = String(e);
     } finally {
@@ -616,7 +622,7 @@ $('btn-llm-apply').onclick = async () => {
         $('btn-llm-apply').disabled = false;
     }
     if (error) {
-        $('detail-llm').textContent = '교체 실패 — 기존 모델 유지';
+        $('detail-llm').textContent = tr('교체 실패 — 기존 모델 유지');
         $('llm-hint').textContent = error;
     } else {
         loadLlmModels();
@@ -624,6 +630,65 @@ $('btn-llm-apply').onclick = async () => {
 };
 
 // ── TTS 엔진 ────────────────────────────────────────────────
+// ── 캐릭터 팩 ──────────────────────────────────────────────
+// 호출어·프롬프트·기억이 서버가 뜰 때 정해지므로, 고르면 config에 저장하고 서버를 다시 띄운다.
+// 이 앱이 띄운 서버일 때만 다시 시작할 수 있다 — 아니면 저장만 하고 그렇다고 알린다
+let charLoaded = false;
+let charCurrent = null;
+let ownsServer = false;
+
+async function loadCharacters() {
+    charLoaded = true;
+    let data;
+    try {
+        data = await window.companion.charList();
+        if (!data || !data.characters) throw new Error('no data');
+    } catch {
+        charLoaded = false;
+        $('char-pack-hint').textContent = tr('API 서버가 실행되면 캐릭터 목록이 나타납니다.');
+        return;
+    }
+    charCurrent = data.current;
+    CHAR_NAME = data.name || CHAR_NAME;
+    const sel = $('char-pack');
+    sel.innerHTML = '';
+    for (const c of data.characters) {
+        const o = document.createElement('option');
+        o.value = c.id;
+        const extra = [c.lore ? tr('세계관') : '', c.voice ? tr('목소리') : ''].filter(Boolean).join(', ');
+        o.textContent = `${c.name} — ${c.id}` + (extra ? ` (${extra})` : '');
+        sel.appendChild(o);
+    }
+    sel.value = data.current;
+    $('detail-char').textContent = tr('현재: {name} ({id})', { name: data.name, id: data.current });
+    $('char-pack-hint').textContent = tr('캐릭터를 바꾸면 API 서버가 다시 시작됩니다. 대화 기록과 기억은 캐릭터마다 따로 쌓입니다.');
+}
+
+$('btn-char-apply').onclick = async () => {
+    const id = $('char-pack').value;
+    if (!id) return;
+    if (id === charCurrent) { $('char-pack-hint').textContent = tr('이미 이 캐릭터입니다.'); return; }
+    const name = $('char-pack').selectedOptions[0].textContent.split(' — ')[0];
+    $('btn-char-apply').disabled = true;
+    try {
+        const r = await window.companion.charSelect(id);
+        if (r.detail) throw new Error(r.detail);
+        if (ownsServer) {
+            $('detail-char').textContent = tr('{name}(으)로 바꾸는 중 — 서버를 다시 시작합니다…', { name });
+            charLoaded = true;                // 다시 뜰 때까지 목록을 읽지 않는다
+            const rr = await window.companion.restartServer();
+            if (!rr.ok) $('char-pack-hint').textContent = rr.error;
+            charLoaded = false; llmLoaded = false; ttsLoaded = false;
+        } else {
+            $('char-pack-hint').textContent = tr('저장했습니다. 서버를 다시 시작하면 {name}(으)로 바뀝니다.', { name });
+        }
+    } catch (e) {
+        $('char-pack-hint').textContent = String(e.message || e);
+    } finally {
+        $('btn-char-apply').disabled = false;
+    }
+};
+
 let ttsLoaded = false;
 let ttsBusy = false;
 
@@ -635,12 +700,12 @@ async function loadTtsEngines() {
         data = await window.companion.ttsEngines();
     } catch {
         ttsLoaded = false;
-        $('tts-hint').textContent = 'API 서버가 실행되면 엔진 목록이 나타납니다.';
+        $('tts-hint').textContent = tr('API 서버가 실행되면 엔진 목록이 나타납니다.');
         return;
     }
     if (!data.current) {
         // TTS 교체 기능 추가 전에 띄운 서버 (404)
-        $('tts-hint').textContent = 'API 서버가 TTS 교체를 지원하지 않습니다. 서버를 재시작하세요.';
+        $('tts-hint').textContent = tr('API 서버가 TTS 교체를 지원하지 않습니다. 서버를 재시작하세요.');
         return;
     }
     const sel = $('tts-engine');
@@ -652,10 +717,10 @@ async function loadTtsEngines() {
         sel.appendChild(o);
     }
     sel.value = data.current.provider;
-    $('detail-tts').textContent = `현재: ${data.current.label}`;
+    $('detail-tts').textContent = tr('현재: {x}', { x: data.current.label });
     $('tts-hint').textContent = data.current.provider === 'gpt_sovits'
-        ? 'GPT-SoVITS는 별도 서버로 GPU를 약 1.6GB 씁니다 — 게임 중 VRAM이 부족하면 Edge로 바꾸면 반환됩니다.'
-        : 'Edge TTS는 GPU를 쓰지 않는 클라우드 음성입니다.';
+        ? tr('GPT-SoVITS는 별도 서버로 GPU를 약 1.6GB 씁니다 — 게임 중 VRAM이 부족하면 Edge로 바꾸면 반환됩니다.')
+        : tr('Edge TTS는 GPU를 쓰지 않는 클라우드 음성입니다.');
 }
 
 $('btn-tts-apply').onclick = async () => {
@@ -664,15 +729,13 @@ $('btn-tts-apply').onclick = async () => {
     ttsBusy = true;
     $('btn-tts-apply').disabled = true;
     $('detail-tts').textContent = provider === 'gpt_sovits'
-        ? 'GPT-SoVITS 서버 실행·모델 로딩 중 (10~20초)...'
-        : '교체 중...';
+        ? tr('GPT-SoVITS 서버 실행·모델 로딩 중 (10~20초)...')
+        : tr('교체 중...');
     let error = null;
     try {
         const r = await window.companion.ttsSelect(provider);
         if (r.detail) error = r.detail;
-        else appendLog('server', `
-[TTS 교체] ${r.current.label}
-`);
+        else appendLog('server', '\n' + tr('[TTS 교체] {x}', { x: r.current.label }) + '\n');
     } catch (e) {
         error = String(e);
     } finally {
@@ -680,7 +743,7 @@ $('btn-tts-apply').onclick = async () => {
         $('btn-tts-apply').disabled = false;
     }
     if (error) {
-        $('detail-tts').textContent = '교체 실패 — 기존 엔진 유지';
+        $('detail-tts').textContent = tr('교체 실패 — 기존 엔진 유지');
         $('tts-hint').textContent = error;
     } else {
         loadTtsEngines();
@@ -730,18 +793,18 @@ function renderChips(state, mem) {
         c.appendChild(el('b', '', String(value)));
         chips.appendChild(c);
     };
-    add('LLM', ((state.llm.provider === 'ollama' || state.llm.provider === 'llamacpp') ? '로컬 ' : '') + state.llm.model);
+    add('LLM', ((state.llm.provider === 'ollama' || state.llm.provider === 'llamacpp') ? tr('로컬 ') : '') + state.llm.model);
     add('temp', state.llm.temperature);
     add('STT', (state.stt.model || '').split('/').pop());
     add('TTS', state.tts.label || state.tts.provider);
-    add('장기기억', mem.long_term_count + '개');
+    add(tr('장기기억'), tr('{n}개', { n: mem.long_term_count }));
 }
 
 function renderInterests(keywords) {
     const box = $('char-interests');
     box.innerHTML = '';
     if (!keywords.length) {
-        box.appendChild(el('div', 'rag-none', '아직 데이터가 없습니다.'));
+        box.appendChild(el('div', 'rag-none', tr('아직 데이터가 없습니다.')));
         return;
     }
     const max = keywords[0].count;
@@ -763,7 +826,7 @@ function renderRag(retrievals) {
     box.innerHTML = '';
     if (!retrievals.length) {
         box.appendChild(el('div', 'rag-none',
-            '아직 참조 기록이 없습니다. 대화를 하면 매 턴 어떤 기억을 검색했는지 여기 표시됩니다.'));
+            tr('아직 참조 기록이 없습니다. 대화를 하면 매 턴 어떤 기억을 검색했는지 여기 표시됩니다.')));
         return;
     }
     for (const r of retrievals) {
@@ -775,11 +838,11 @@ function renderRag(retrievals) {
         if (r.hits.length) {
             for (const h of r.hits) {
                 const hit = el('div', 'rag-hit', '↳ ' + h.summary + ' ');
-                hit.appendChild(el('span', 'rag-dist', `(거리 ${h.distance})`));
+                hit.appendChild(el('span', 'rag-dist', tr('(거리 {d})', { d: h.distance })));
                 item.appendChild(hit);
             }
         } else {
-            item.appendChild(el('div', 'rag-none', '↳ 관련 기억 없음'));
+            item.appendChild(el('div', 'rag-none', tr('↳ 관련 기억 없음')));
         }
         box.appendChild(item);
     }
@@ -788,9 +851,9 @@ function renderRag(retrievals) {
 function renderLongTerm(longTerm) {
     const box = $('char-ltm');
     box.innerHTML = '';
-    $('char-ltm-count').textContent = longTerm.length ? `${longTerm.length}개 · 최신순` : '';
+    $('char-ltm-count').textContent = longTerm.length ? tr('{n}개 · 최신순', { n: longTerm.length }) : '';
     if (!longTerm.length) {
-        box.appendChild(el('div', 'rag-none', '저장된 장기 기억이 없습니다.'));
+        box.appendChild(el('div', 'rag-none', tr('저장된 장기 기억이 없습니다.')));
         return;
     }
     for (const m of longTerm) {
@@ -808,23 +871,24 @@ function renderTurns(data) {
     const rows = (data && data.rows) || [];
     box.innerHTML = '';
     $('char-turns-count').textContent = data
-        ? `답함 ${data.replied} · 듣기만 ${data.listened} · 먼저 건 말 ${data.initiatives}` : '';
+        ? tr('답함 {a} · 듣기만 {b} · 먼저 건 말 {c}', { a: data.replied, b: data.listened, c: data.initiatives }) : '';
     if (!rows.length) {
-        box.appendChild(el('div', 'rag-none', '아직 판단 기록이 없습니다. 대화가 오가면 쌓입니다.'));
+        box.appendChild(el('div', 'rag-none', tr('아직 판단 기록이 없습니다. 대화가 오가면 쌓입니다.')));
         return;
     }
     for (const r of rows) {
         const line = el('div', 'mem-item');
         const t = (r.ts || '').slice(11, 16);
         if (r.event === 'initiative') {
-            line.appendChild(el('span', 'turn-init', '먼저 말함 '));
-            line.append(`${t} · ${r.idle_s}초 조용함 (기준 ${r.wait_s}초, 관심 ${r.interest})`);
+            line.appendChild(el('span', 'turn-init', tr('먼저 말함 ')));
+            line.append(tr('{t} · {idle}초 조용함 (기준 {wait}초, 관심 {interest})',
+                           { t, idle: r.idle_s, wait: r.wait_s, interest: r.interest }));
         } else if (r.replied) {
-            line.appendChild(el('span', 'turn-yes', '답함 '));
-            line.append(`${t} · ${r.why} · ${r.chars}자`);
+            line.appendChild(el('span', 'turn-yes', tr('답함 ')));
+            line.append(`${t} · ${r.why} · ` + tr('{n}자', { n: r.chars }));
         } else {
-            line.appendChild(el('span', 'turn-no', '듣기만 '));
-            line.append(`${t} · ${r.why} · ${r.text || r.chars + '자'}`);
+            line.appendChild(el('span', 'turn-no', tr('듣기만 ')));
+            line.append(`${t} · ${r.why} · ${r.text || tr('{n}자', { n: r.chars })}`);
         }
         box.appendChild(line);
     }
@@ -834,11 +898,11 @@ function renderShortTerm(shortTerm) {
     const box = $('char-stm');
     box.innerHTML = '';
     if (!shortTerm.length) {
-        box.appendChild(el('div', 'rag-none', '최근 대화 기록이 없습니다.'));
+        box.appendChild(el('div', 'rag-none', tr('최근 대화 기록이 없습니다.')));
         return;
     }
     for (const m of shortTerm) {
-        const who = m.role === 'user' ? '사용자' : CHAR_NAME;
+        const who = m.role === 'user' ? tr('사용자') : CHAR_NAME;
         const line = el('div', 'mem-item');
         line.appendChild(el('span', m.role === 'user' ? 'stm-user' : 'stm-assistant', who + ': '));
         line.append(m.content || '');
@@ -854,18 +918,18 @@ async function loadState() {
             window.companion.inspectMemory(),
             window.companion.inspectTurns().catch(() => null),
         ]);
-        $('char-prompt').textContent = state.prompt || '(prompt.txt 비어 있음)';
-        $('char-topic').textContent = state.topic || '(topic.txt 비어 있음)';
+        $('char-prompt').textContent = state.prompt || tr('(prompt.txt 비어 있음)');
+        $('char-topic').textContent = state.topic || tr('(topic.txt 비어 있음)');
         renderChips(state, mem);
         renderInterests(mem.keywords || []);
         renderRag(mem.recent_retrievals || []);
         renderLongTerm(mem.long_term || []);
         renderTurns(turns);
         renderShortTerm(mem.short_term || []);
-        $('char-updated').textContent = '갱신: ' + new Date().toLocaleTimeString();
+        $('char-updated').textContent = tr('갱신: ') + new Date().toLocaleTimeString();
         $('char-hint').textContent = '';
     } catch {
-        $('char-hint').textContent = 'API 서버가 실행 중이어야 상태를 볼 수 있습니다. (제어 탭에서 서버를 시작하세요)';
+        $('char-hint').textContent = tr('API 서버가 실행 중이어야 상태를 볼 수 있습니다. (제어 탭에서 서버를 시작하세요)');
     }
 }
 

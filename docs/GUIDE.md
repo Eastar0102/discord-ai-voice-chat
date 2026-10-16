@@ -228,12 +228,16 @@ npm start
 
 | tab | what it does |
 |---|---|
-| **제어** (control) | start/stop the API server and the bot, join a server/voice channel, listening mode, **switch LLM model and TTS voice**, live logs |
+| **제어** (control) | start/stop the API server and the bot, join a server/voice channel, listening mode, **switch character, LLM model and TTS voice**, live logs |
 | **보기** (look) | show it the screen or a window, give it a link, see/clear what it is holding, preview the last capture |
 | **전사** (transcription) | start/stop transcription mode, choose a preset (with VRAM) |
 | **대화** (conversation) | the live conversation as a chat. Each reply carries its **felt latency** (from the moment you stopped speaking to the first sound), color-coded, with endpoint / STT / thinking / voice in the tooltip. You can also type into it |
 | **상태** (state) | the current prompt, recent memory retrievals, long-term memory, and the **turn-taking log** (what it let pass, and why) |
 | **기억** (memory) | memory map: a vector map (t-SNE/PCA) and a mind map. Click a point to highlight what would be retrieved with it |
+
+The **EN / 한국어** button at the top right switches the UI language. The choice is remembered. Switching reloads the window; the server and bot keep running. This is the app's language, not the language the character speaks.
+
+**Switching characters**: pick a pack in the **Character** panel of the control tab and apply. Wake words, prompts and memory are fixed when the server starts, so the app restarts the server. If the app didn't start the server, it only saves the setting; restart the server yourself. Conversation history and memory are kept per character (`data/characters/<id>/`).
 
 `npm run dist` builds a portable exe. Keep it inside the project (`app/dist/`), or point `COMPANION_ROOT` at the project.
 
@@ -243,7 +247,7 @@ npm start
 xcopy /E /I characters\example characters\mychar
 ```
 
-In `config/config.json`:
+Select it in `config/config.json`, or from the control app's Character panel:
 
 ```json
 "character": "mychar"
@@ -308,11 +312,7 @@ Text.
 ```
 
 - Blank lines separate blocks; lines starting with `#` are comments.
-- After editing, **stop the server** and re-ingest:
-
-  ```bash
-  python scripts/ingest_lore.py
-  ```
+- Restart the server after editing and changed lore is re-ingested automatically. To ingest with the server stopped, run `python scripts/ingest_lore.py`.
 
 ### Telling it who built it
 
@@ -452,7 +452,7 @@ A meeting logger that runs **fully separate** from the assistant. Starting it st
 - As a file: `python scripts/memory_map.py --tsne --open`.
 
 **Resetting**
-- Stop the server and delete `data/`. History, memory and metrics are all removed.
+- To reset one character, stop the server and delete `data/characters/<id>/`. Its `memory_<id>` collection in the memory DB (`data/chroma_db`) remains, though. To wipe everything, delete the whole `data/` folder (history, memory, metrics and the people list all go).
 
 > Don't open `data/chroma_db` from another process while the server is running. Two processes on the same store break reads.
 
@@ -488,4 +488,4 @@ Every section of `config/config.json` carries a `_comment`. The ones you'll touc
 | `CUDA` / `cudnn` errors | CUDA build of PyTorch and cuDNN 9. Or fall back: `stt.whisper_local.device: "cpu"`, `compute_type: "int8"` |
 | Ollama connection refused | is `ollama serve` running; `llm.ollama.base_url` |
 | memory `Error finding id` | another script opened `data/chroma_db` while the server is up. Keep it to one process |
-| lore edits not reflected | stop the server, run `python scripts/ingest_lore.py` |
+| lore edits not reflected | restart the server (changed lore.txt is re-ingested automatically) |

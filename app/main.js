@@ -33,6 +33,25 @@ function findProjectRoot() {
 
 const ROOT = findProjectRoot();
 
+// 화면 언어 — 렌더러가 고른 값을 알려 준다 (로그·오류 문구만 여기서 만든다)
+let LANG = 'ko';
+const MSG = {
+    exited: { ko: (c) => `\n[프로세스 종료 (code ${c})]\n`, en: (c) => `\n[process exited (code ${c})]\n` },
+    started: { ko: (cmd) => `[시작: ${cmd}]\n`, en: (cmd) => `[started: ${cmd}]\n` },
+    waiting: { ko: () => 'API 서버 기동 대기 중 (모델 로딩에 수십 초 걸릴 수 있음)...\n',
+               en: () => 'Waiting for the API server (loading models can take tens of seconds)...\n' },
+    ready: { ko: () => 'API 서버 준비 완료 — 봇을 시작합니다.\n', en: () => 'API server ready — starting the bot.\n' },
+    diedEarly: { ko: () => 'API 서버가 시작 직후 종료됐습니다. 서버 로그를 확인하세요.',
+                 en: () => 'The API server exited right after starting. Check the server log.' },
+    timeout: { ko: () => 'API 서버가 2분 내에 준비되지 않았습니다.', en: () => 'The API server was not ready within 2 minutes.' },
+    restarting: { ko: () => '\n[캐릭터를 바꿔 API 서버를 다시 시작합니다]\n', en: () => '\n[Restarting the API server for the new character]\n' },
+    notOwned: { ko: () => '이 앱이 띄운 서버가 아닙니다. 서버를 직접 다시 시작하세요.',
+                en: () => 'This server was not started by the app. Restart it yourself.' },
+    noRoot: { ko: () => '프로젝트 루트를 찾을 수 없습니다.\nexe를 프로젝트 폴더(app/dist) 안에 두거나, COMPANION_ROOT 환경변수를 설정하세요.',
+              en: () => 'Could not find the project root.\nKeep the exe inside the project (app/dist), or set the COMPANION_ROOT environment variable.' },
+};
+const M = (key, ...a) => (MSG[key][LANG] || MSG[key].ko)(...a);
+
 // ── 자식 프로세스 관리 ──────────────────────────────────────
 const procs = { server: null, bot: null };
 let win = null;
@@ -51,7 +70,7 @@ function wire(name, p) {
     p.stderr.on('data', d => send('log', { source: name, line: d.toString() }));
     p.on('exit', code => {
         procs[name] = null;
-        send('log', { source: name, line: `\n[프로세스 종료 (code ${code})]\n` });
+        send('log', { source: name, line: M('exited', code) });
         send('proc-state', procState());
     });
     send('proc-state', procState());
@@ -67,14 +86,14 @@ function startServer() {
         cwd: ROOT,
         env: { ...process.env, PYTHONUTF8: '1' }, // 파이프 stdout이 cp949가 되는 것 방지
     });
-    send('log', { source: 'server', line: `[시작: ${py}]\n` });
+    send('log', { source: 'server', line: M('started', py) });
     wire('server', p);
 }
 
 function startBot() {
     if (procs.bot) return;
     const p = spawn('node', ['index.js'], { cwd: path.join(ROOT, 'discord_bot'), shell: true });
-    send('log', { source: 'bot', line: '[시작: node index.js]\n' });
+    send('log', { source: 'bot', line: M('started', 'node index.js') });
     wire('bot', p);
 }
 
@@ -106,17 +125,30 @@ async function apiHealthy() {
 // "한번에 시작": 서버 기동 → 헬스 통과 대기 → 봇 기동
 async function startAll() {
     startServer();
-    send('log', { source: 'app', line: 'API 서버 기동 대기 중 (모델 로딩에 수십 초 걸릴 수 있음)...\n' });
+    send('log', { source: 'app', line: M('waiting') });
     for (let i = 0; i < 60; i++) {
         await new Promise(r => setTimeout(r, 2000));
         if (await apiHealthy()) {
-            send('log', { source: 'app', line: 'API 서버 준비 완료 — 봇을 시작합니다.\n' });
+            send('log', { source: 'app', line: M('ready') });
             startBot();
             return { ok: true };
         }
-        if (!procs.server) return { ok: false, error: 'API 서버가 시작 직후 종료됐습니다. 서버 로그를 확인하세요.' };
+        if (!procs.server) return { ok: false, error: M('diedEarly') };
     }
-    return { ok: false, error: 'API 서버가 2분 내에 준비되지 않았습니다.' };
+    return { ok: false, error: M('timeout') };
+}
+
+// 캐릭터를 바꾼 뒤 — 호출어·프롬프트·기억이 서버가 뜰 때 정해지므로 다시 띄운다.
+// 이 앱이 띄운 서버만 다시 시작할 수 있다 (다른 곳에서 띄운 서버는 손대지 않는다)
+async function restartServer() {
+    if (!procs.server) return { ok: false, owned: false, error: M('notOwned') };
+    send('log', { source: 'server', line: M('restarting') });
+    stopProc('server');
+    for (let i = 0; i < 50 && procs.server; i++) await new Promise(r => setTimeout(r, 200));
+    // 포트가 풀릴 때까지 조금 더 (taskkill 직후엔 8000이 잠깐 남아 있다)
+    for (let i = 0; i < 25 && await apiHealthy(); i++) await new Promise(r => setTimeout(r, 200));
+    startServer();
+    return { ok: true, owned: true };
 }
 
 // ── 상태 폴링 ───────────────────────────────────────────────
@@ -189,6 +221,12 @@ ipcMain.handle('llm:select', (e, provider, model) =>
         signal: AbortSignal.timeout(300000),
     }));
 ipcMain.handle('tts:engines', () => jfetch(`${API_URL}/tts/engines`));
+// 캐릭터 팩 — 고르면 config에 저장되고, 서버를 다시 시작해야 적용된다
+ipcMain.handle('char:list', () => jfetch(`${API_URL}/characters`));
+ipcMain.handle('char:select', (e, id) =>
+    jfetch(`${API_URL}/characters/select`, { method: 'POST', body: JSON.stringify({ id }) }));
+ipcMain.handle('proc:restartServer', () => restartServer());
+ipcMain.handle('app:lang', (e, lang) => { LANG = lang === 'en' ? 'en' : 'ko'; });
 // GPT-SoVITS는 별도 서버 실행·모델 로딩까지 기다렸다 응답한다
 ipcMain.handle('tts:select', (e, provider) =>
     jfetch(`${API_URL}/tts/select`, {
@@ -205,7 +243,6 @@ function createWindow() {
         height: 800,
         title: 'Companion Control',
         backgroundColor: '#16161e',
-        icon: path.join(__dirname, 'build', 'icon.ico'),  // 창·작업표시줄 (exe 아이콘은 빌드 설정)
         webPreferences: { preload: path.join(__dirname, 'preload.js') },
     });
     win.setMenuBarVisibility(false);
@@ -214,7 +251,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
     if (!ROOT) {
-        dialog.showErrorBox('Companion Control', '프로젝트 루트를 찾을 수 없습니다.\nexe를 프로젝트 폴더(app/dist) 안에 두거나, COMPANION_ROOT 환경변수를 설정하세요.');
+        dialog.showErrorBox('Companion Control', M('noRoot'));
         app.quit();
         return;
     }

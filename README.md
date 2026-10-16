@@ -57,7 +57,7 @@ discord-ai-voice-chat/
 │  │                           greetings, initiative, memory flush
 │  ├─ llm.py                   prompt assembly, history normalization, judge, tag parsing
 │  ├─ memory.py                episode extraction, fact reconciliation, retrieval
-│  ├─ character.py             loads the character pack
+│  ├─ character.py · character_api.py   loads the character pack · lists/switches packs
 │  ├─ lore.py                  background retrieval from the pack's lore.txt
 │  ├─ vad.py · stt.py · tts.py audio stages (thin wrappers over providers/)
 │  ├─ providers/
@@ -71,9 +71,9 @@ discord-ai-voice-chat/
 │  └─ transcribe_api.py        dedicated Whisper instance for transcription mode
 ├─ characters/example/         sample character pack ("모모")
 ├─ config/config.json          every knob, with a _comment on each section
-├─ app/                        Electron control app
+├─ app/                        Electron control app (Korean / English UI)
 ├─ scripts/                    google_login.py · ingest_lore.py · memory_map.py
-└─ data/                       created at runtime: history, memory DB, metrics (git-ignored)
+└─ data/                       created at runtime: per-character history (characters/<id>/), memory DB, metrics (git-ignored)
 ```
 
 A deeper walk-through of one turn, the memory lifecycle and how to add a provider is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.

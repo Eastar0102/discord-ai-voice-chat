@@ -27,13 +27,13 @@ function liveLatency(r) {
     if (!felt) return '';
     const cls = felt >= 4 ? 'lat-bad' : felt >= 2.5 ? 'lat-mid' : 'lat-ok';
     const bits = [];
-    if (r.endpoint_s != null) bits.push(`말끝 ${r.endpoint_s.toFixed(2)}`);
+    if (r.endpoint_s != null) bits.push(tr('말끝 {s}', { s: r.endpoint_s.toFixed(2) }));
     if (r.stt_s != null) bits.push(`STT ${r.stt_s.toFixed(2)}`);
-    if (r.llm_first_s != null) bits.push(`생각 ${r.llm_first_s.toFixed(2)}`);
-    if (r.ttfa_s != null) bits.push(`첫 소리까지 ${r.ttfa_s.toFixed(2)}`);
-    if (r.first_chars) bits.push(`첫 조각 ${r.first_chars}자`);
+    if (r.llm_first_s != null) bits.push(tr('생각 {s}', { s: r.llm_first_s.toFixed(2) }));
+    if (r.ttfa_s != null) bits.push(tr('첫 소리까지 {s}', { s: r.ttfa_s.toFixed(2) }));
+    if (r.first_chars) bits.push(tr('첫 조각 {n}자', { n: r.first_chars }));
     if (r.model) bits.push(shortModel(r.model));
-    return `<span class="lat ${cls}" title="${liveEsc(bits.join(' · '))}">${felt.toFixed(2)}초</span>`;
+    return `<span class="lat ${cls}" title="${liveEsc(bits.join(' · '))}">${tr('{s}초', { s: felt.toFixed(2) })}</span>`;
 }
 
 // "hf.co/Mungert/A.X-4.0-Light-GGUF:Q4_K_M" → "A.X-4.0-Light-GGUF:Q4_K_M"
@@ -64,46 +64,50 @@ function liveBlock(r, prev) {
 
     if (r.event === 'stt_timeout' || r.event === 'stt_skipped' || r.event === 'stt_recovered') {
         const msg = r.event === 'stt_recovered'
-            ? `음성 인식 복구 — 멈춰 있던 전사가 ${r.stuck_s}초 만에 끝남`
+            ? tr('음성 인식 복구 — 멈춰 있던 전사가 {s}초 만에 끝남', { s: r.stuck_s })
             : r.event === 'stt_timeout'
-                ? `음성 인식 시간 초과 (${r.sec}초) — 이번 말은 넘김`
-                : `음성 인식이 밀려 넘김 (${r.stuck_s || 0}초째, ${r.kind === 'partial' ? '중간' : '최종'})`;
+                ? tr('음성 인식 시간 초과 ({s}초) — 이번 말은 넘김', { s: r.sec })
+                : tr('음성 인식이 밀려 넘김 ({s}초째, {kind})',
+                     { s: r.stuck_s || 0, kind: r.kind === 'partial' ? tr('중간') : tr('최종') });
         return `<div class="warn">${liveEsc(liveTime(r.ts))} · ${liveEsc(msg)}</div>`;
     }
     // 기억 정리에서 생긴 일 — 판정 모델이 실패하면 낱말 필터만 남는데, 그걸 콘솔만 알고 있었다
     if (r.event === 'memory_error') {
-        return `<div class="warn">${liveEsc(liveTime(r.ts))} · ${liveEsc(`기억 판정 실패 (${r.model || '?'}) — 낱말 필터만 적용: ${r.error || ''}`)}</div>`;
+        return `<div class="warn">${liveEsc(liveTime(r.ts))} · ${liveEsc(tr('기억 판정 실패 ({model}) — 낱말 필터만 적용: {err}', { model: r.model || '?', err: r.error || '' }))}</div>`;
     }
     if (r.event === 'memory_misheard') {
-        return `<div class="warn">${liveEsc(liveTime(r.ts))} · ${liveEsc(`잘못 들었을 수 있는 ${r.dropped}줄은 기억에서 뺌: ${(r.texts || []).join(' / ')}`)}</div>`;
+        return `<div class="warn">${liveEsc(liveTime(r.ts))} · ${liveEsc(tr('잘못 들었을 수 있는 {n}줄은 기억에서 뺌: {texts}', { n: r.dropped, texts: (r.texts || []).join(' / ') }))}</div>`;
     }
     // 화면을 본 것 · 링크를 읽은 것. 대화 가운데 있어야 어느 턴이 그 때문에 느려졌는지 보인다
     if (r.event === 'look' || r.event === 'read') {
         const bits = r.event === 'look'
-            ? [r.source, r.mode, `${r.chars}자`, r.ocr_lines ? `글자 ${r.ocr_lines}줄` : '',
-               r.took ? Object.entries(r.took).map(([k, v]) => `${k} ${v}초`).join(' · ') : '']
-            : [r.title || r.url, `${r.chars}자`];
+            ? [r.source, r.mode, tr('{n}자', { n: r.chars }), r.ocr_lines ? tr('글자 {n}줄', { n: r.ocr_lines }) : '',
+               r.took ? Object.entries(r.took).map(([k, v]) => tr('{k} {v}초', { k, v })).join(' · ') : '']
+            : [r.title || r.url, tr('{n}자', { n: r.chars })];
         const note = (r.notes || []).join('; ');
         return `<div class="saw" title="${liveEsc(note)}">${liveEsc(liveTime(r.ts))} · `
-            + `${r.event === 'look' ? '화면을 봄' : '링크를 읽음'} — `
+            + `${r.event === 'look' ? tr('화면을 봄') : tr('링크를 읽음')} — `
             + `${liveEsc(bits.filter(Boolean).join(' · '))}</div>`;
     }
     if (r.event === 'spoke') {       // 캐릭터가 먼저 꺼낸 말 (인사 · 먼저 말 걸기)
         const why = r.kind === 'greet'
-            ? `${r.kind_ko || '인사'}${r.who ? ' · ' + liveEsc(r.who) : ''}`
-            : `먼저 말 걸기 · ${r.idle_s}초 조용함 (기준 ${r.wait_s}초, 관심 ${r.interest})`;
+            ? `${liveEsc(r.kind_ko || tr('인사'))}${r.who ? ' · ' + liveEsc(r.who) : ''}`
+            : tr('먼저 말 걸기 · {idle}초 조용함 (기준 {wait}초, 관심 {interest})',
+                 { idle: r.idle_s, wait: r.wait_s, interest: r.interest });
         return bubble('char first', CHAR_NAME, t,
             liveEsc(r.reply) + `<span class="first-tag">${why}</span>`,
             liveLatency(r), r.self_avatar, CHAR_NAME);
     }
     if (r.event === 'initiative') {   // 옛 기록 (말한 내용이 없던 시절)
         return bubble('char init', who, t,
-            `<i>먼저 말을 꺼냄</i> · ${r.idle_s}초 조용함 (기준 ${r.wait_s}초, 관심 ${r.interest})`,
+            `<i>${tr('먼저 말을 꺼냄')}</i> · `
+            + tr('{idle}초 조용함 (기준 {wait}초, 관심 {interest})', { idle: r.idle_s, wait: r.wait_s, interest: r.interest }),
             '', r.self_avatar, CHAR_NAME);
     }
     if (r.event === 'gate') {      // 답하지 않은 발화
         return bubble('human skip', who, t,
-            liveEsc(r.text || `(${r.chars}자)`) + `<span class="skip-tag">듣기만 · ${liveEsc(r.why)}</span>`,
+            liveEsc(r.text || tr('({n}자)', { n: r.chars }))
+            + `<span class="skip-tag">${liveEsc(tr('듣기만 · {why}', { why: r.why }))}</span>`,
             '', r.avatar, r.speaker);
     }
     let out = bubble('human', who, t, liveEsc(r.text), '', r.avatar, r.speaker);
@@ -115,7 +119,7 @@ function liveBlock(r, prev) {
 function setupLine(cfg) {
     const bits = [shortModel(cfg.model)];
     if (cfg.tts) bits.push(`TTS ${cfg.tts}`);
-    if (cfg.chunking) bits.push(`조각 ${cfg.chunking}`);
+    if (cfg.chunking) bits.push(tr('조각 {x}', { x: cfg.chunking }));
     return `<div class="setup"><span>${liveEsc(bits.filter(Boolean).join(' · '))}</span></div>`;
 }
 
@@ -139,7 +143,7 @@ function renderLive() {
     box.innerHTML = liveRows.map((r, i) => {
         const cfg = setupChanged(r, seen);
         return (cfg ? setupLine(seen) : '') + liveBlock(r, liveRows[i - 1]);
-    }).join('') || '<div class="rag-none">아직 대화가 없습니다.</div>';
+    }).join('') || '<div class="rag-none">' + tr('아직 대화가 없습니다.') + '</div>';
     // 프로필 사진을 못 불러오면 이름 첫 글자로 바꾼다 (오프라인·주소 만료)
     box.querySelectorAll('img.msg-av').forEach((img) => {
         const fallback = () => {
@@ -160,8 +164,8 @@ function renderLive() {
     const withModel = liveRows.filter((r) => r.model);
     const model = withModel.length ? shortModel(withModel[withModel.length - 1].model) : '';
     $('live-stat').textContent =
-        `답함 ${turns.length} · 듣기만 ${skips.length} · 먼저 말함 ${inits.length}`
-        + (firsts.length ? ` · 첫 소리 중앙값 ${firsts[Math.floor(firsts.length / 2)].toFixed(2)}초` : '')
+        tr('답함 {a} · 듣기만 {b} · 먼저 말함 {c}', { a: turns.length, b: skips.length, c: inits.length })
+        + (firsts.length ? tr(' · 첫 소리 중앙값 {s}초', { s: firsts[Math.floor(firsts.length / 2)].toFixed(2) }) : '')
         + (model ? ` · ${model}` : '');
 }
 
@@ -175,7 +179,7 @@ async function pollLive() {
         }
         $('live-hint').textContent = '';
     } catch (e) {
-        $('live-hint').textContent = 'API 서버가 실행 중이어야 대화가 보입니다. (제어 탭에서 서버를 시작하세요)';
+        $('live-hint').textContent = tr('API 서버가 실행 중이어야 대화가 보입니다. (제어 탭에서 서버를 시작하세요)');
     }
 }
 

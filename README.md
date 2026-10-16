@@ -2,6 +2,8 @@
 
 **English** · [한국어](README.ko.md)
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![discord.js](https://img.shields.io/badge/discord.js-14-5865F2?logo=discord&logoColor=white) ![Electron](https://img.shields.io/badge/Electron-31-47848F?logo=electron&logoColor=white) ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+
 **A reference pipeline for real-time AI voice conversation in Discord voice channels.**
 
 Someone speaks in a voice channel. A few seconds later an AI character answers out loud. It decides on its own whether it was being spoken to, remembers people across sessions, and starts a conversation when the room goes quiet.
@@ -56,6 +58,24 @@ The Electron control app, in English (it also runs in Korean):
 | **Control**: processes, Discord, character pack, LLM and voice switching | **State**: live prompt, retrieved memory, turn-taking log, short-term history |
 | ![Look tab](docs/images/look.png) | ![Transcribe tab](docs/images/transcribe.png) |
 | **Look**: show it a screen or window, or give it a link | **Transcribe**: meeting-log mode with selectable Whisper presets |
+
+## Tech stack
+
+| layer | technology | role |
+|---|---|---|
+| **Languages** | Python 3.10 · JavaScript (Node.js 18+) | AI pipeline in Python, Discord I/O and the control app in JS |
+| **Discord** | discord.js 14 · @discordjs/voice · @discordjs/opus · prism-media | gateway, voice receive per speaker, Opus decode, playback |
+| **Bridge** | FastAPI · Uvicorn · WebSocket · httpx | binary audio + control JSON between the two processes; REST for the control app |
+| **Voice activity** | WebRTC VAD · NumPy · SciPy | speech detection with an energy gate, 48 kHz → 16 kHz resampling |
+| **Speech-to-text** | faster-whisper (CTranslate2) · Whisper large-v3 / large-v3-turbo | streaming partial transcripts, hotwords from channel members |
+| **LLM** (pluggable) | Ollama · llama.cpp `llama-server` · OpenAI API · Anthropic Claude API | chat, turn-taking judge, memory extraction |
+| **Text-to-speech** (pluggable) | Edge TTS · GPT-SoVITS v2Pro | sentence-level synthesis with emotion styles |
+| **Memory** | ChromaDB · sentence-transformers (`jhgan/ko-sroberta-multitask`) · scikit-learn | vector store, Korean embeddings, t-SNE for the memory map |
+| **Vision** | Windows.Media.Ocr (winsdk) · Pillow · Qwen3-VL via Ollama | screen capture, OCR, image description |
+| **Integrations** | Google Docs / Drive REST (OAuth, read-only) | follow a document while you write |
+| **Control app** | Electron · vanilla HTML/CSS/JS · SVG | process control, live conversation, memory map, Korean/English UI |
+
+No build step — Python runs directly under Uvicorn, JavaScript runs as written.
 
 ## Project structure
 

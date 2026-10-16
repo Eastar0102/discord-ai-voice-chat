@@ -2,6 +2,8 @@
 
 [English](README.md) · **한국어**
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![discord.js](https://img.shields.io/badge/discord.js-14-5865F2?logo=discord&logoColor=white) ![Electron](https://img.shields.io/badge/Electron-31-47848F?logo=electron&logoColor=white) ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
+
 **디스코드 음성 채널에서 AI와 실시간으로 음성 대화하는 파이프라인의 레퍼런스 구현입니다.**
 
 누군가 음성 채널에서 말하면, 몇 초 뒤 AI 캐릭터가 소리 내어 대답합니다. 자기에게 한 말인지 스스로 판단하고, 사람을 세션이 바뀌어도 기억하고, 방이 조용해지면 먼저 말을 꺼냅니다.
@@ -56,6 +58,24 @@ Electron 컨트롤 앱입니다 (영어 화면, 한국어로도 바꿀 수 있�
 | **제어**: 프로세스, 디스코드, 캐릭터 팩, LLM·목소리 교체 | **상태**: 지금 프롬프트, 검색한 기억, 말할 차례 판단 기록, 단기 기록 |
 | ![보기 탭](docs/images/look.png) | ![전사 탭](docs/images/transcribe.png) |
 | **보기**: 화면·창 보여 주기, 링크 읽히기 | **전사**: Whisper 프리셋을 고르는 회의록 모드 |
+
+## 기술 스택
+
+| 영역 | 기술 | 쓰임 |
+|---|---|---|
+| **언어** | Python 3.10 · JavaScript (Node.js 18+) | AI 파이프라인은 Python, 디스코드 입출력과 컨트롤 앱은 JS |
+| **디스코드** | discord.js 14 · @discordjs/voice · @discordjs/opus · prism-media | 게이트웨이, 화자별 음성 수신, Opus 디코딩, 재생 |
+| **연결** | FastAPI · Uvicorn · WebSocket · httpx | 두 프로세스 사이의 오디오(바이너리)·제어 JSON, 컨트롤 앱용 REST |
+| **음성 감지** | WebRTC VAD · NumPy · SciPy | 에너지 게이트를 더한 발화 감지, 48kHz → 16kHz 변환 |
+| **음성 인식** | faster-whisper (CTranslate2) · Whisper large-v3 / large-v3-turbo | 말하는 동안 부분 전사, 채널 사람 이름을 핫워드로 |
+| **LLM** (교체 가능) | Ollama · llama.cpp `llama-server` · OpenAI API · Anthropic Claude API | 대화, 말할 차례 판정, 기억 추출 |
+| **음성 합성** (교체 가능) | Edge TTS · GPT-SoVITS v2Pro | 감정 스타일이 붙는 문장 단위 합성 |
+| **기억** | ChromaDB · sentence-transformers (`jhgan/ko-sroberta-multitask`) · scikit-learn | 벡터 저장소, 한국어 임베딩, 기억 지도용 t-SNE |
+| **눈** | Windows.Media.Ocr (winsdk) · Pillow · Ollama의 Qwen3-VL | 화면 캡처, OCR, 이미지 설명 |
+| **연동** | Google Docs / Drive REST (OAuth, 읽기 전용) | 글 쓰는 동안 문서 따라 읽기 |
+| **컨트롤 앱** | Electron · 순수 HTML/CSS/JS · SVG | 프로세스 제어, 실시간 대화, 기억 지도, 한국어/영어 화면 |
+
+빌드 단계는 없습니다. Python은 Uvicorn으로 바로 돌고, JavaScript는 쓴 그대로 실행됩니다.
 
 ## 프로젝트 구조
 

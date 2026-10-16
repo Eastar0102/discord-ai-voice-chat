@@ -1,0 +1,319 @@
+{
+  "character": "example",
+  "_character_comment": "characters/<이름>/ 의 캐릭터 팩을 쓴다. 자기 캐릭터는 characters/example을 복사해 만든다.",
+  "llm": {
+    "provider": "ollama",
+    "fallback": [],
+    "prompt_profiles": {
+      "_comment": "모델 이름 접두사 → 프롬프트 파일. 특정 모델에 다른(예: 짧은) 프롬프트를 쓰고 싶을 때만. 예: {\"my-tuned\": \"characters/example/prompt_short.txt\"}"
+    },
+    "openai_chat": {
+      "model": "gpt-4o-mini",
+      "temperature": 0.6,
+      "max_tokens": 200,
+      "top_p": 1.0,
+      "frequency_penalty": 0.0,
+      "presence_penalty": 0.0,
+      "choices": [
+        "gpt-4o-mini",
+        "gpt-4.1-mini"
+      ]
+    },
+    "ollama": {
+      "_comment": "로컬 LLM (Ollama). 설치된 모델을 실시간 조회하므로 ollama pull 후 컨트롤 앱에서 바로 고를 수 있다. think=false는 추론 모델의 사고 출력을 꺼 첫 토큰 지연을 줄인다. keep_alive 동안 VRAM에 상주.",
+      "base_url": "http://127.0.0.1:11434",
+      "model": "qwen3:8b",
+      "temperature": 0.6,
+      "max_tokens": 300,
+      "top_p": 1.0,
+      "num_ctx": 8192,
+      "keep_alive": "30m",
+      "think": false,
+      "options": {
+        "repeat_penalty": 1.1,
+        "repeat_last_n": 256
+      }
+    },
+    "claude": {
+      "_comment": "Claude API. 키는 .env의 ANTHROPIC_API_KEY. effort는 low~max (음성 대화는 지연 때문에 low 권장). cache=true면 성격 프롬프트 앞부분을 캐싱한다.",
+      "model": "claude-haiku-4-5",
+      "effort": "low",
+      "max_tokens": 300,
+      "cache": true,
+      "timeout": 60
+    },
+    "llamacpp": {
+      "_comment": "llama.cpp 서버(llama-server)를 자식 프로세스로 띄워 쓴다 — Ollama가 못 하는 MoE 전문가 층 CPU 배치(--cpu-moe)용. server는 llama-server 실행 파일 경로, models는 이름 → GGUF 경로. parallel 2 = 대화 슬롯 + 판정·기억 슬롯. -ub(마이크로 배치)가 --cpu-moe에서 첫 토큰 지연을 크게 줄인다. cache_layout은 턴마다 바뀌는 칸을 기록 뒤로 보내 prefill 캐시를 살린다.",
+      "server": "",
+      "model": "",
+      "models": {},
+      "model_options": {},
+      "port": 8090,
+      "ctx": 16384,
+      "parallel": 2,
+      "args": [
+        "--cpu-moe",
+        "-ub",
+        "4096",
+        "-b",
+        "4096",
+        "-t",
+        "14"
+      ],
+      "cache_layout": false,
+      "temperature": 0.6,
+      "top_p": 0.95,
+      "max_tokens": 300
+    },
+    "choices_comment": "컨트롤 앱 LLM 목록에 함께 뜨는 이름들"
+  },
+  "stt": {
+    "provider": "whisper_local",
+    "fallback": [],
+    "whisper_local": {
+      "model": "deepdml/faster-whisper-large-v3-turbo-ct2",
+      "device": "cuda",
+      "compute_type": "float16",
+      "beam_size": 5,
+      "hotwords": "",
+      "_comment": "hotwords가 비어 있으면 캐릭터 팩의 hotwords를 쓴다"
+    },
+    "timeout_sec": 20,
+    "queue_wait_sec": 3,
+    "name_hotwords": true
+  },
+  "screen": {
+    "_comment": "화면 보기 소스. type은 screen/window/region, title은 창 제목 정규식, max_width는 VLM에 보낼 때만 줄이는 폭(OCR은 원본), focus는 찍기 전에 창을 앞으로 가져올지 (가려진 창은 그 자리의 화면이 찍힌다)",
+    "default": "전체",
+    "sources": {
+      "전체": {
+        "type": "screen",
+        "max_width": 1280
+      },
+      "브라우저": {
+        "type": "window",
+        "title": "Chrome|Edge|Firefox",
+        "focus": true,
+        "max_width": 1280
+      }
+    }
+  },
+  "vision": {
+    "_comment": "화면 묘사용 VLM(Ollama qwen3-vl:4b)을 본 뒤에도 VRAM에 둘지. 대화 모델과 같이 올라가면 대답이 크게 느려지므로 기본은 내린다. VRAM이 넉넉하면 true.",
+    "keep_vlm": false
+  },
+  "manuscript": {
+    "_comment": "문서 같이 읽기. provider는 gdocs(구글 문서 — scripts/google_login.py로 한 번 연결하고 gdocs.folder_id나 doc_id를 적는다. folder_id면 그 폴더에서 가장 최근에 고친 문서를 따라간다) 또는 screen(화면 OCR — 글자가 min_glyph_px보다 작으면 읽지 않는다). watch가 켜져 있으면 음성 채널에 있는 동안 문서가 바뀌었는지 살펴 저절로 글쓰기 상태로 들어간다. 새로 쓴 대목이 min_new_chars를 넘고 문장이 끝났고 quiet_sec가 지났으면 한마디 한다. other_work는 캐릭터 자신이 나오는 작품이 있을 때 그 이름(섞지 않게). title·folder_id는 config/private.json에 두면 저장소에 남지 않는다.",
+    "title": "",
+    "aliases": [],
+    "other_work": "",
+    "provider": "gdocs",
+    "gdocs": {
+      "folder_id": null,
+      "doc_id": null
+    },
+    "source": null,
+    "min_glyph_px": 24,
+    "watch": false,
+    "writing_hold_sec": 600,
+    "chars": 3000,
+    "poll_sec": 20,
+    "quiet_sec": 180,
+    "min_new_chars": 150,
+    "kind": "글",
+    "first_person": false
+  },
+  "transcribe": {
+    "_comment": "전사(스크립트) 모드 — 어시스턴트와 분리된 전용 Whisper 인스턴스. 응답 속도가 중요하지 않으므로 기본값은 정확도 우선(large-v3). preset으로 무게를 고르고, !script <preset>으로 세션마다 덮어쓸 수 있다. 인스턴스는 세션 시작 시 로딩되고 종료·유휴 시 해제된다(VRAM 반환).",
+    "provider": "whisper_local",
+    "preset": "accurate",
+    "defaults": {
+      "_comment": "모든 프리셋에 공통 적용되는 입출력 게이트. 어시스턴트보다 느슨하다 — 전사는 들린 말을 최대한 남기는 쪽.",
+      "language": "ko",
+      "rms_gate": 0.002,
+      "sanitize": false,
+      "min_chars": 1,
+      "warmup": false
+    },
+    "presets": {
+      "fast": {
+        "label": "속도 우선 (turbo, int8)",
+        "model": "deepdml/faster-whisper-large-v3-turbo-ct2",
+        "device": "cuda",
+        "compute_type": "int8_float16",
+        "beam_size": 1,
+        "vram_mb": 1600
+      },
+      "balanced": {
+        "label": "균형 (turbo, float16, beam 5)",
+        "model": "deepdml/faster-whisper-large-v3-turbo-ct2",
+        "device": "cuda",
+        "compute_type": "float16",
+        "beam_size": 5,
+        "vram_mb": 2000
+      },
+      "accurate": {
+        "label": "정확도 우선 (large-v3, beam 5)",
+        "model": "Systran/faster-whisper-large-v3",
+        "device": "cuda",
+        "compute_type": "float16",
+        "beam_size": 5,
+        "best_of": 5,
+        "patience": 1.0,
+        "vram_mb": 3400
+      },
+      "max": {
+        "label": "최대 정확도 (large-v3, beam 8 + 온도 폴백, 매우 느림)",
+        "model": "Systran/faster-whisper-large-v3",
+        "device": "cuda",
+        "compute_type": "float16",
+        "beam_size": 8,
+        "best_of": 8,
+        "patience": 2.0,
+        "temperature": [
+          0.0,
+          0.2,
+          0.4,
+          0.6
+        ],
+        "min_silence_duration_ms": 300,
+        "timeout_sec": 240,
+        "vram_mb": 3800
+      },
+      "cpu": {
+        "label": "VRAM 0 (large-v3 CPU int8, 실시간 아님)",
+        "model": "Systran/faster-whisper-large-v3",
+        "device": "cpu",
+        "compute_type": "int8",
+        "beam_size": 5,
+        "timeout_sec": 300,
+        "vram_mb": 0
+      }
+    },
+    "max_concurrency": 1,
+    "max_pending": 60,
+    "timeout_sec": 120,
+    "request_timeout_sec": 300,
+    "min_utterance_sec": 0.4,
+    "max_utterance_sec": 60,
+    "idle_unload_sec": 600,
+    "silence_ms": 900,
+    "flush_ms": 2000,
+    "order_hold_sec": 25,
+    "post_to_channel": true,
+    "save_transcript": true
+  },
+  "openai": {
+    "model": "gpt-4o-mini"
+  },
+  "identity": {
+    "_comment": "만든 사람(주인)으로 인식할 디스코드 표시이름 목록. 첫 항목이 프롬프트에서 그 사람을 부르는 이름이다. 대소문자/앞뒤공백은 무시. 비워 두면 화자 구분 안내를 넣지 않는다. 본인 이름은 config/private.json에 둬도 된다.",
+    "owner_names": []
+  },
+  "tts": {
+    "provider": "edge",
+    "fallback": [],
+    "choices": [
+      "gpt_sovits",
+      "edge"
+    ],
+    "gpt_sovits": {
+      "_comment": "직접 학습한 GPT-SoVITS 목소리. 통합 패키지의 api_v2를 별도 프로세스로 자동 실행한다 (가중치 경로는 install_dir 기준). voice_preset 폴더에 감정별 참조 wav와 voice.json을 둔다. aux_neutral=true는 평소 음성을 보조 참조로 섞어 감정이 바뀌어도 음색을 붙잡고, emotion_weight는 그때 감정:평소 비율.",
+      "label": "GPT-SoVITS (직접 학습한 목소리)",
+      "base_url": "http://127.0.0.1:9880",
+      "install_dir": "",
+      "gpt_weights": "",
+      "sovits_weights": "",
+      "voice_preset": "characters/example/voice",
+      "aux_neutral": true,
+      "emotion_weight": 3,
+      "top_k": 15,
+      "temperature": 1.0,
+      "speed": 1.0,
+      "seed": 8
+    },
+    "edge": {
+      "label": "Edge TTS (SunHi)",
+      "voice": "ko-KR-SunHiNeural",
+      "base_rate": 5,
+      "base_pitch": 15
+    },
+    "chunking": "sentence",
+    "_chunking_comment": "문장을 어디까지 쪼개 TTS로 보낼지. sentence=문장 경계에서만(기본) · comma=문장+쉼표(긴 첫 문장의 최악을 줄임) · off=대답 전체를 한 번에 · aggressive=연결어미·글자 수까지 쪼갬(첫 음성 빠름, 이음매 많음)"
+  },
+  "filters": {
+    "ignore_phrases": [
+      "thank you",
+      "thanks",
+      "bye",
+      "hello",
+      "hi",
+      "mbc 뉴스",
+      "kbs 뉴스",
+      "sbs 뉴스",
+      "jtbc 뉴스",
+      "채널a 뉴스",
+      "앵커",
+      "리포터",
+      "뉴스",
+      "음",
+      "어",
+      "아",
+      "으",
+      "이",
+      "오",
+      "우",
+      "에",
+      "애",
+      "그",
+      "저",
+      "음음",
+      "어어",
+      "아아"
+    ],
+    "ignore_partial": [
+      "mbc 뉴스",
+      "kbs 뉴스",
+      "sbs 뉴스",
+      "jtbc 뉴스",
+      "채널a 뉴스",
+      "다음 영상",
+      "시청해 주셔서",
+      "시청해주셔서",
+      "구독과 좋아요"
+    ],
+    "_comment": "호출어는 캐릭터 팩의 wake_words. 여기 wake_words를 적으면 그쪽이 이긴다. ignore_*는 Whisper가 무음·잡음에서 지어내는 방송 문구."
+  },
+  "audio": {
+    "device": 1,
+    "output_device": 4,
+    "cable_output": 5
+  },
+  "memory": {
+    "_topics_comment": "기억을 묶는 주제. {\"주제 이름\": [\"별칭\", ...]} — 문장에 이 낱말이 있으면 그 주제의 기억으로 묶고, 그 주제가 나온 턴에 따로 칸을 준다. 모델을 부르지 않고 낱말로 판정한다. manuscript.title·aliases는 자동으로 합쳐진다.",
+    "topics": {},
+    "_comment": "장기 기억 (src/memory.py). summarizer_model이 null이면 지금 대화에 쓰는 모델로 요약 (로컬이면 VRAM 추가 없음). 에피소드 = 대화가 episode_idle_sec 동안 멈추거나, 봇이 나가거나, 사람 발화가 episode_max_turns 쌓였을 때 저장. 마지막 대화가 greet_after_hours 이상 전인 사람이 들어오면 먼저 인사.",
+    "summarizer_model": null,
+    "episode_idle_sec": 300,
+    "episode_max_turns": 20,
+    "greet_after_hours": 6,
+    "greet_cooldown_min": 30,
+    "fact_dedup_distance": 60,
+    "engaged_sec": 12,
+    "initiative_after_sec": [
+      75
+    ],
+    "initiative_backoff": 1.8,
+    "initiative_backoff_max": 8.0,
+    "judge": true,
+    "_summarizer_comment": "null이면 지금 대화 모델. \"claude:claude-haiku-4-5\"나 \"llamacpp:<모델>\"처럼 적으면 기억 추출만 따로 돌린다 (백그라운드라 지연 무관).",
+    "screen": false,
+    "screen_model": null,
+    "min_stt_logprob": -0.6,
+    "max_person_facts": 4,
+    "_stt_filter_comment": "min_stt_logprob: Whisper 확신도가 이보다 낮은 사람 줄은 기억 추출에서 뺀다 (기록에는 남음). 소음 핫워드 -0.65~-0.96, 정상 발화 -0.22 안팎. metrics.jsonl의 turn.stt_lp가 쌓이면 다시 잡을 것. max_person_facts: 에피소드 하나에서 한 사람에 대해 저장할 사실 상한.",
+    "_screen_comment": "추출된 기억 후보를 대화와 나란히 다시 보여 주고 주제(life/bot/meta/nothere)를 분류받아 life가 아닌 것을 버린다. 7B급 로컬 모델로는 진짜 사실까지 버려 쓸모가 없었다 — 더 나은 모델(screen_model)이 있을 때 true로.",
+    "summarizer_effort": "medium",
+    "summarizer_max_tokens": 1500
+  }
+}

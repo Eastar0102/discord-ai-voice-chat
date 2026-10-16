@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>__NAME__ 기억 지도</title>
+<style>
+  :root {
+    --bg: #11131a; --panel: #181b24; --line: #272b37; --ink: #e8eaf0; --ink-2: #a7adbd; --muted: #767e93;
+    --accent: #c4a6ff;
+    --font: "Pretendard", "Malgun Gothic", system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 14px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 14px;
+           padding: 14px 20px; border-bottom: 1px solid var(--line); background: var(--panel); }
+  h1 { font-size: 16px; margin: 0; font-weight: 700; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 12px; font-family: var(--mono); }
+  .spacer { flex: 1; }
+  .tabs { display: flex; gap: 6px; }
+  .tab { padding: 5px 14px; border-radius: 999px; border: 1px solid var(--line); background: transparent;
+         color: var(--ink-2); cursor: pointer; font-family: inherit; font-size: 13px; }
+  .tab.on { background: var(--accent); border-color: var(--accent); color: #1a1030; font-weight: 600; }
+  input[type=search] { background: #0d0f15; border: 1px solid var(--line); color: var(--ink);
+                       border-radius: 8px; padding: 6px 10px; font-family: inherit; width: 190px; }
+  label.chk { color: var(--ink-2); font-size: 12.5px; display: flex; align-items: center; gap: 5px; cursor: pointer; }
+  main { display: grid; grid-template-columns: 1fr 330px; height: calc(100vh - 53px); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; height: auto; } }
+  .stage { position: relative; overflow: auto; }
+  .stage svg { display: block; width: 100%; height: 100%; }
+  .stage.scrolly { padding: 10px 16px 30px; }
+  .stage.scrolly svg { width: 1180px; height: auto; }
+  aside { border-left: 1px solid var(--line); background: var(--panel); padding: 16px; overflow: auto; }
+  .legend { display: flex; flex-direction: column; gap: 7px; margin-bottom: 16px; }
+  .lg { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--ink-2); }
+  .lg b { margin-left: auto; font-family: var(--mono); font-weight: 400; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .hint { color: var(--muted); font-size: 12px; line-height: 1.6; border-top: 1px dashed var(--line);
+          padding-top: 12px; margin-top: 4px; }
+  .detail h2 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+  .d-text { font-size: 15px; line-height: 1.55; margin-bottom: 10px; }
+  .d-meta { font-family: var(--mono); font-size: 11.5px; color: var(--ink-2); line-height: 1.8;
+            border-top: 1px solid var(--line); padding-top: 8px; }
+  .d-near div { font-size: 12.5px; color: var(--ink-2); padding: 5px 0; border-top: 1px solid var(--line);
+                cursor: pointer; line-height: 1.45; }
+  .d-near div:hover { color: var(--ink); }
+  .d-near b { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 400; }
+  .node { cursor: pointer; }
+  .node circle { stroke: var(--bg); stroke-width: 1.5; }
+  .node.dim { opacity: .13; }
+  .node.sel circle { stroke: #fff; stroke-width: 2.5; }
+  .edge { stroke: #3b4152; stroke-width: 1; fill: none; }
+  .edge.dim { opacity: .12; }
+  .edge.hot { stroke: var(--accent); stroke-width: 1.8; }
+  text { font-family: var(--font); fill: var(--ink-2); }
+  .leaf { font-size: 11.5px; cursor: pointer; }
+  .leaf.dim { opacity: .15; }
+  .leaf.sel { fill: #fff; font-weight: 700; }
+  .grp { font-size: 13px; fill: var(--ink); font-weight: 700; }
+  .grp-n { font-size: 10.5px; fill: var(--muted); font-family: var(--mono); }
+  .hub { font-size: 15px; fill: #fff; font-weight: 800; }
+  .axis { stroke: var(--line); stroke-dasharray: 3 4; }
+  .axis-t { font-size: 10.5px; fill: var(--muted); font-family: var(--mono); }
+  .tip { position: absolute; pointer-events: none; background: #05070c; border: 1px solid var(--line);
+         border-radius: 8px; padding: 7px 10px; font-size: 12.5px; max-width: 320px; line-height: 1.45;
+         opacity: 0; transition: opacity .1s; z-index: 5; }
+</style>
+</head>
+<body>
+<header>
+  <h1>__NAME__ 기억 지도</h1>
+  <span class="sub" id="stat"></span>
+  <span class="spacer"></span>
+  <input type="search" id="q" placeholder="기억 검색 (예: 발로란트)">
+  <label class="chk"><input type="checkbox" id="showEdges" checked> 연결선</label>
+  <div class="tabs">
+    <button class="tab on" data-view="vector">벡터 지도</button>
+    <button class="tab" data-view="mind">마인드맵</button>
+  </div>
+</header>
+<main>
+  <div class="stage" id="stage"><div class="tip" id="tip"></div></div>
+  <aside>
+    <div class="legend" id="legend"></div>
+    <div class="detail" id="detail"></div>
+  </aside>
+</main>
+<script>
+const DATA = /*__DATA__*/null;
+const TYPE = {
+  person:  {ko: "사람에 대해 아는 것", color: "#6ea8fe"},
+  episode: {ko: "있었던 일",           color: "#f0a868"},
+  self:    {ko: "자기 자신",         color: "#8ee3b0"},
+  "":      {ko: "분류 없음",           color: "#767e93"}
+};
+const N = DATA.nodes, E = DATA.edges;
+const stage = document.getElementById("stage"), tip = document.getElementById("tip");
+let view = "vector", sel = -1, query = "";
+
+document.getElementById("stat").textContent =
+  N.length + "개 · " + DATA.collection + " · " + DATA.dims + "차원 → 2차원 (" + DATA.layout
+  + (DATA.explained ? ", " + Math.round(DATA.explained * 100) + "% 담김" : "")
+  + ") · " + DATA.built + " " + DATA.source;
+
+const counts = {};
+N.forEach(function (n) { counts[n.type] = (counts[n.type] || 0) + 1; });
+document.getElementById("legend").innerHTML = Object.keys(counts).sort().map(function (t) {
+  const info = TYPE[t] || TYPE[""];
+  return '<div class="lg"><span class="dot" style="background:' + info.color + '"></span>'
+    + info.ko + ' <b>' + counts[t] + '</b></div>';
+}).join("") + '<div class="hint">점을 누르면 그 기억과 가까운 것들이 보입니다. 선으로 이어진 짝은 서로 거리가 '
+  + DATA.gate + ' 이하 — 검색이 “관련 있다”고 보는 것과 같은 눈금입니다.</div>';
+
+function matches(n) { return !query || (n.text + " " + n.name).toLowerCase().indexOf(query) >= 0; }
+function esc(s) {
+  return (s || "").replace(/[&<>]/g, function (c) { return {"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]; });
+}
+function cut(s, k) { return s.length > k ? s.slice(0, k - 1) + "…" : s; }
+
+function showTip(ev, n) {
+  tip.innerHTML = "<b>" + esc(n.name || (TYPE[n.type] || TYPE[""]).ko) + "</b><br>" + esc(n.text);
+  tip.style.opacity = 1;
+  const r = stage.getBoundingClientRect();
+  tip.style.left = Math.min(ev.clientX - r.left + 14, stage.clientWidth - 340) + "px";
+  tip.style.top = (ev.clientY - r.top + 14) + "px";
+}
+function hideTip() { tip.style.opacity = 0; }
+
+function detail(i) {
+  const box = document.getElementById("detail");
+  if (i < 0) { box.innerHTML = ""; return; }
+  const n = N[i];
+  const near = E.filter(function (e) { return e.a === i || e.b === i; })
+    .map(function (e) { return {j: e.a === i ? e.b : e.a, d: e.d}; })
+    .sort(function (a, b) { return a.d - b.d; });
+  let html = '<h2>' + (TYPE[n.type] || TYPE[""]).ko + (n.name ? " · " + esc(n.name) : "") + '</h2>'
+    + '<div class="d-text">' + esc(n.text) + '</div>'
+    + '<div class="d-meta">기록 ' + (esc(n.ts).replace("T", " ").slice(0, 16) || "—")
+    + (n.due ? "<br>예정일 " + esc(n.due) : "")
+    + (n.who ? "<br>주인 " + esc(n.who) : "")
+    + "<br>좌표 " + n.x.toFixed(2) + ", " + n.y.toFixed(2) + '</div>';
+  if (near.length) {
+    html += '<div class="d-near"><h2 style="margin-top:14px">가까운 기억</h2>'
+      + near.map(function (x) {
+          return '<div data-i="' + x.j + '"><b>' + x.d + '</b> · ' + esc(cut(N[x.j].text, 60)) + '</div>';
+        }).join("") + '</div>';
+  }
+  box.innerHTML = html;
+  box.querySelectorAll("[data-i]").forEach(function (el) {
+    el.onclick = function () { sel = +el.dataset.i; render(); };
+  });
+}
+
+function drawVector() {
+  const W = 1000, H = 720, pad = 46;
+  const xs = N.map(function (n) { return n.x; }), ys = N.map(function (n) { return n.y; });
+  const x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs);
+  const y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys);
+  const sx = function (v) { return pad + (v - x0) / ((x1 - x0) || 1) * (W - pad * 2); };
+  const sy = function (v) { return H - pad - (v - y0) / ((y1 - y0) || 1) * (H - pad * 2); };
+  const near = {};
+  if (sel >= 0) {
+    E.forEach(function (e) {
+      if (e.a === sel) near[e.b] = 1;
+      if (e.b === sel) near[e.a] = 1;
+    });
+  }
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">';
+  const my = sy((y0 + y1) / 2), mx = sx((x0 + x1) / 2);
+  s += '<line class="axis" x1="' + pad + '" y1="' + my + '" x2="' + (W - pad) + '" y2="' + my + '"/>';
+  s += '<line class="axis" x1="' + mx + '" y1="' + pad + '" x2="' + mx + '" y2="' + (H - pad) + '"/>';
+  s += '<text class="axis-t" x="' + pad + '" y="' + (H - 14) + '">'
+     + '가까울수록 비슷한 이야기 · ' + DATA.dims + '차원을 2차원으로 누른 그림 (' + DATA.layout + ')</text>';
+  if (document.getElementById("showEdges").checked) {
+    E.forEach(function (e) {
+      const hot = sel >= 0 && (e.a === sel || e.b === sel);
+      const dim = sel >= 0 && !hot;
+      s += '<line class="edge' + (hot ? " hot" : "") + (dim ? " dim" : "") + '" x1="' + sx(N[e.a].x)
+        + '" y1="' + sy(N[e.a].y) + '" x2="' + sx(N[e.b].x) + '" y2="' + sy(N[e.b].y) + '"/>';
+    });
+  }
+  N.forEach(function (n, i) {
+    const dim = !matches(n) || (sel >= 0 && i !== sel && !near[i]);
+    const r = n.type === "episode" ? 7 : 5.5;
+    s += '<g class="node' + (dim ? " dim" : "") + (i === sel ? " sel" : "") + '" data-i="' + i + '">'
+      + '<circle cx="' + sx(n.x) + '" cy="' + sy(n.y) + '" r="' + r + '" fill="'
+      + (TYPE[n.type] || TYPE[""]).color + '"/></g>';
+  });
+  if (sel >= 0) {
+    s += '<text x="' + sx(N[sel].x) + '" y="' + (sy(N[sel].y) - 12) + '" text-anchor="middle"'
+      + ' style="font-size:12px;fill:#fff">' + esc(cut(N[sel].text, 24)) + '</text>';
+  }
+  return s + "</svg>";
+}
+
+function drawMind() {
+  // 왼쪽에 캐릭터, 가운데 갈래(사람마다 하나 · 있었던 일 · 나 자신), 오른쪽에 기억 한 줄씩.
+  // 방사형은 한국어 문장이 서로 겹쳐 읽을 수가 없어서 가로 트리로 편다.
+  const groups = [], byPerson = {};
+  N.forEach(function (n, i) {
+    if (n.type === "person") {
+      const key = n.name || n.who || "이름 없음";
+      (byPerson[key] = byPerson[key] || []).push(i);
+    }
+  });
+  Object.keys(byPerson)
+    .sort(function (a, b) { return byPerson[b].length - byPerson[a].length; })
+    .forEach(function (name) { groups.push({label: name, kind: "person", items: byPerson[name]}); });
+
+  const pick = function (t) {
+    return N.map(function (n, i) { return n.type === t ? i : -1; }).filter(function (i) { return i >= 0; });
+  };
+  const eps = pick("episode").sort(function (a, b) { return (N[b].ts || "").localeCompare(N[a].ts || ""); });
+  if (eps.length) groups.push({label: "있었던 일", kind: "episode", items: eps});
+  const selfs = pick("self");
+  const lived = selfs.filter(function (i) { return N[i].kind === "experience"; });
+  const tastes = selfs.filter(function (i) { return N[i].kind !== "experience"; });
+  if (tastes.length) groups.push({label: "나 자신", kind: "self", items: tastes});
+  if (lived.length) groups.push({label: "나에게 있었던 일", kind: "self", items: lived});
+  const rest = N.map(function (n, i) {
+    return (n.type !== "person" && n.type !== "episode" && n.type !== "self") ? i : -1;
+  }).filter(function (i) { return i >= 0; });
+  if (rest.length) groups.push({label: "그 밖", kind: "", items: rest});
+
+  const ROW = 21, GAP = 22, TOP = 34, HUB_X = 86, GRP_X = 250, LEAF_X = 430, W = 1180;
+  let y = TOP, body = "", rows = 0;
+  const anchors = [];
+  groups.forEach(function (g) {
+    const y0 = y;
+    g.items.forEach(function (i, k) {
+      const ly = y + k * ROW;
+      const color = (TYPE[N[i].type] || TYPE[""]).color;
+      body += '<circle cx="' + LEAF_X + '" cy="' + (ly - 4) + '" r="3.2" fill="' + color
+        + '" class="node" data-i="' + i + '"/>';
+      const label = N[i].text + (N[i].due ? "  (예정 " + N[i].due + ")" : "");
+      body += '<text class="leaf' + (matches(N[i]) ? "" : " dim") + (i === sel ? " sel" : "")
+        + '" data-i="' + i + '" x="' + (LEAF_X + 10) + '" y="' + ly + '">' + esc(cut(label, 62)) + '</text>';
+    });
+    const gy = y0 + (g.items.length - 1) * ROW / 2;
+    anchors.push({y: gy, kind: g.kind, label: g.label, n: g.items.length, y0: y0,
+                  y1: y0 + (g.items.length - 1) * ROW});
+    y = y0 + g.items.length * ROW + GAP;
+    rows += g.items.length;
+  });
+
+  const H = y + 10;
+  let pre = "";
+  anchors.forEach(function (g) {
+    const color = (TYPE[g.kind] || TYPE[""]).color;
+    // 갈래 → 각 기억 (세로 묶음선 + 짧은 가지)
+    pre += '<path class="edge" d="M' + (GRP_X + 108) + ',' + g.y + ' C' + (LEAF_X - 40) + ',' + g.y
+      + ' ' + (LEAF_X - 40) + ',' + g.y0 + ' ' + LEAF_X + ',' + (g.y0 - 4) + '" style="stroke:'
+      + color + ';opacity:.22"/>';
+    pre += '<line class="edge" x1="' + (LEAF_X - 12) + '" y1="' + (g.y0 - 4) + '" x2="' + (LEAF_X - 12)
+      + '" y2="' + (g.y1 - 4) + '" style="stroke:' + color + ';opacity:.35"/>';
+    for (let k = 0; k < g.n; k++) {
+      const ly = g.y0 + k * ROW - 4;
+      pre += '<line class="edge" x1="' + (LEAF_X - 12) + '" y1="' + ly + '" x2="' + LEAF_X + '" y2="' + ly
+        + '" style="stroke:' + color + ';opacity:.35"/>';
+    }
+    // 캐릭터 → 갈래
+    pre += '<path class="edge" d="M' + (HUB_X + 44) + ',' + (TOP + (H - TOP) / 2 - 22)
+      + ' C' + (GRP_X - 60) + ',' + (TOP + (H - TOP) / 2 - 22) + ' ' + (GRP_X - 60) + ',' + g.y
+      + ' ' + GRP_X + ',' + g.y + '" style="stroke:' + color + ';opacity:.5;stroke-width:1.6"/>';
+    pre += '<text class="grp" x="' + (GRP_X + 8) + '" y="' + (g.y + 1) + '">' + esc(g.label) + '</text>';
+    pre += '<text class="grp-n" x="' + (GRP_X + 8) + '" y="' + (g.y + 15) + '">' + g.n + '개</text>';
+  });
+  const hy = TOP + (H - TOP) / 2 - 22;
+  pre += '<circle cx="' + HUB_X + '" cy="' + hy + '" r="42" fill="#242838" stroke="#3b4152"/>';
+  pre += '<text class="hub" x="' + HUB_X + '" y="' + (hy + 5) + '" text-anchor="middle">__NAME__</text>';
+
+  return '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H
+    + '" style="height:' + H + 'px;width:' + W + 'px;max-width:none">' + pre + body + '</svg>';
+}
+
+function render() {
+  stage.querySelectorAll("svg").forEach(function (el) { el.remove(); });
+  stage.insertAdjacentHTML("beforeend", view === "vector" ? drawVector() : drawMind());
+  stage.classList.toggle("scrolly", view === "mind");
+  stage.querySelectorAll("svg [data-i]").forEach(function (el) {
+    const i = +el.dataset.i;
+    el.addEventListener("click", function () { sel = (sel === i ? -1 : i); render(); });
+    el.addEventListener("mousemove", function (ev) { showTip(ev, N[i]); });
+    el.addEventListener("mouseleave", hideTip);
+  });
+  detail(sel);
+}
+
+document.querySelectorAll(".tab").forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll(".tab").forEach(function (x) { x.classList.toggle("on", x === b); });
+    view = b.dataset.view;
+    render();
+  };
+});
+document.getElementById("q").oninput = function (e) {
+  query = e.target.value.trim().toLowerCase();
+  render();
+};
+document.getElementById("showEdges").onchange = render;
+render();
+</script>
+</body>
+</html>

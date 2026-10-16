@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Companion Control</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+    <h1>🎙️ Companion Control</h1>
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="control">제어</button>
+        <button class="tab-btn" data-tab="look">보기</button>
+        <button class="tab-btn" data-tab="script">전사</button>
+        <button class="tab-btn" data-tab="live">대화</button>
+        <button class="tab-btn" data-tab="char">상태</button>
+        <button class="tab-btn" data-tab="map">기억</button>
+    </nav>
+    <button id="btn-start-all" class="primary">▶ 한번에 시작</button>
+</header>
+
+<main>
+<!-- ═══════════ 탭 1: 제어 ═══════════ -->
+<div id="tab-control" class="tab stack active">
+    <!-- 패널 바로가기 — 스크롤이 길어져서 위에 붙여 둔다 -->
+    <div class="jump" id="jump-bar"></div>
+
+    <!-- 프로세스 제어 -->
+    <section class="panel wide" id="p-proc" data-name="프로세스">
+        <h2>프로세스</h2>
+        <div class="proc-row">
+            <span class="dot off" id="dot-api"></span>
+            <span class="proc-name">API 서버 (Python)</span>
+            <span class="proc-detail" id="detail-api">중지됨</span>
+            <button id="btn-server-start">시작</button>
+            <button id="btn-server-stop" class="danger">중지</button>
+        </div>
+        <div class="proc-row">
+            <span class="dot off" id="dot-bot"></span>
+            <span class="proc-name">Discord 봇 (Node)</span>
+            <span class="proc-detail" id="detail-bot">중지됨</span>
+            <button id="btn-bot-start">시작</button>
+            <button id="btn-bot-stop" class="danger">중지</button>
+        </div>
+    </section>
+
+    <!-- Discord 제어 -->
+    <section class="panel wide" id="p-discord" data-name="Discord">
+        <h2>Discord</h2>
+        <div class="discord-row">
+            <label>서버</label>
+            <select id="guild"></select>
+            <label>보이스 채널</label>
+            <select id="channel"></select>
+            <button id="btn-refresh" title="목록 새로고침">⟳</button>
+        </div>
+        <div class="discord-row">
+            <button id="btn-join" class="primary">참여</button>
+            <button id="btn-leave" class="danger">나가기</button>
+            <span class="spacer"></span>
+            <label>듣기 모드</label>
+            <button id="btn-mode-auto" title="자기에게 한 말에만 답함">자동</button>
+            <button id="btn-mode-always">항상 반응</button>
+            <button id="btn-mode-call">호출어</button>
+            <button id="btn-mode-stop">듣기 중지</button>
+            <span class="proc-detail" id="detail-mode"></span>
+        </div>
+        <div class="hint" id="discord-hint">봇이 실행되면 서버 목록이 나타납니다.</div>
+    </section>
+
+
+
+    <!-- LLM 모델 -->
+    <section class="panel" id="p-llm" data-name="LLM 모델">
+        <h2>LLM 모델</h2>
+        <div class="discord-row">
+            <label>모델</label>
+            <select id="llm-model" class="llm-select"></select>
+            <button id="btn-llm-apply" class="primary">적용</button>
+            <button id="btn-llm-refresh" title="목록 새로고침">⟳</button>
+            <span class="proc-detail" id="detail-llm"></span>
+        </div>
+        <div class="hint" id="llm-hint">API 서버가 실행되면 모델 목록이 나타납니다.</div>
+    </section>
+
+    <!-- TTS 엔진 -->
+    <section class="panel" id="p-tts" data-name="TTS 목소리">
+        <h2>TTS 목소리</h2>
+        <div class="discord-row">
+            <label>엔진</label>
+            <select id="tts-engine" class="llm-select"></select>
+            <button id="btn-tts-apply" class="primary">적용</button>
+            <span class="proc-detail" id="detail-tts"></span>
+        </div>
+        <div class="hint" id="tts-hint">API 서버가 실행되면 엔진 목록이 나타납니다.</div>
+    </section>
+
+    <!-- 로그 -->
+    <section class="panel logs">
+        <div class="log-col">
+            <h2>API 서버 로그</h2>
+            <pre id="log-server"></pre>
+        </div>
+        <div class="log-col">
+            <h2>Discord 봇 로그</h2>
+            <pre id="log-bot"></pre>
+        </div>
+    </section>
+</div>
+
+<!-- ═══════════ 탭: 대화 (실시간) ═══════════ -->
+<!-- ═══════════ 탭: 보기 (눈) ═══════════ -->
+<div id="tab-look" class="tab stack">
+    <!-- 화면 보기 -->
+    <section class="panel" id="p-look" data-name="화면 보기">
+        <h2>화면 보기</h2>
+        <div class="discord-row">
+            <label>소스</label>
+            <select id="look-source"></select>
+            <button id="btn-look-refresh" title="창 목록 새로고침">&#10227;</button>
+            <label><input type="checkbox" id="look-ocr-only"> 글자만 (1초, VRAM 0)</label>
+            <button id="btn-look" class="primary">보기</button>
+            <button id="btn-look-clear" class="danger">치우기</button>
+        </div>
+        <div class="hint" id="look-hint">소스는 config의 <code>screen.sources</code>에 정의하고,
+            아래 목록에서 지금 열린 창을 바로 고를 수도 있습니다. 가려진 창은 그 자리의 화면이 찍힙니다.</div>
+        <div class="ft-teacher" id="look-seen" style="display:none"></div>
+        <img id="look-shot" style="display:none" alt="방금 찍은 화면" title="클릭하면 크게 봅니다">
+    </section>
+
+    <!-- 지금 들고 있는 것 — 화면이든 링크로 받은 글이든 같은 칸을 쓴다 -->
+    <section class="panel" id="p-reading" data-name="지금 보고 있는 것">
+        <h2>지금 보고 있는 것</h2>
+        <div class="discord-row">
+            <label>링크</label>
+            <input type="text" id="read-url" class="grow" placeholder="https://… 기사나 글 주소를 붙이세요">
+            <button id="btn-read-url" class="primary">읽기</button>
+        </div>
+        <div class="discord-row">
+            <span class="proc-detail" id="reading-what">아직 없습니다.</span>
+            <button id="btn-reading-refresh" title="새로고침">&#10227;</button>
+            <button id="btn-reading-clear" class="danger">치우기</button>
+        </div>
+        <div class="hint">디스코드 텍스트 채널에 링크를 붙이거나 위에서 화면을 보면 여기 걸립니다.
+            <code>llm.reading_ttl_min</code>(기본 30분)이 지나면 저절로 사라집니다.</div>
+    </section>
+</div>
+
+<!-- ═══════════ 탭: 전사 ═══════════ -->
+<div id="tab-script" class="tab stack">
+    <!-- 전사 모드 -->
+    <section class="panel" id="p-script" data-name="전사 모드">
+        <h2>전사 모드</h2>
+        <div class="discord-row">
+            <label>기록할 텍스트 채널</label>
+            <select id="script-text-channel"></select>
+            <label>모델</label>
+            <select id="script-preset"></select>
+            <button id="btn-script-start" class="primary">기록 시작</button>
+            <button id="btn-script-stop" class="danger">기록 중지</button>
+            <span class="proc-detail" id="detail-script"></span>
+        </div>
+        <div class="hint">위 보이스 채널에 있는 모두의 말을 받아적습니다. 고른 텍스트 채널에
+            실시간으로 올라가고, 중지하면 전체 기록이 .txt로 첨부됩니다.
+            기록은 채널 선택과 무관하게 <code>data/transcripts/</code>에도 남습니다.
+            캐릭터의 듣기 모드와 동시에 쓸 수 없어, 시작하면 듣기가 멈춥니다.</div>
+    </section>
+</div>
+
+<div id="tab-live" class="tab">
+    <section class="panel char-head">
+        <span class="proc-detail" id="live-stat"></span>
+        <span class="spacer"></span>
+        <button id="btn-live-clear">지우기</button>
+    </section>
+    <section class="panel live-panel">
+        <div id="live-list" class="live-list"></div>
+    </section>
+    <!-- 타이핑으로 말 걸기. 링크를 넣으면 읽게 한다 — 음성으로는 URL을 말할 수 없다 -->
+    <section class="panel live-input">
+        <div class="discord-row">
+            <input type="text" id="say-text" class="grow"
+                   placeholder="말을 걸거나 링크를 붙이세요 (Enter)">
+            <button id="btn-say" class="primary">보내기</button>
+        </div>
+    </section>
+    <div class="hint" id="live-hint">API 서버가 실행되면 대화가 실시간으로 나타납니다.</div>
+</div>
+
+<!-- ═══════════ 탭 2: 상태 ═══════════ -->
+<div id="tab-char" class="tab">
+    <section class="panel char-head">
+        <div class="chips" id="char-chips"></div>
+        <span class="spacer"></span>
+        <span class="proc-detail" id="char-updated"></span>
+        <button id="btn-char-refresh">⟳ 새로고침</button>
+    </section>
+
+    <div class="char-cols">
+        <!-- 성격/프롬프트 -->
+        <section class="panel char-col">
+            <h2>성격 프롬프트 <span class="sub">config/prompt.txt</span></h2>
+            <pre id="char-prompt" class="scrollbox grow2"></pre>
+            <h2>말투 예시 <span class="sub">config/topic.txt</span></h2>
+            <pre id="char-topic" class="scrollbox grow1"></pre>
+        </section>
+
+        <!-- 관심사/참조 -->
+        <section class="panel char-col">
+            <h2>관심 키워드 <span class="sub">장기기억 + 최근 대화 빈도</span></h2>
+            <div id="char-interests" class="scrollbox grow1"></div>
+            <h2>방금 참조한 기억 <span class="sub">RAG 검색 로그 · 최신순</span></h2>
+            <div id="char-rag" class="scrollbox grow2"></div>
+        </section>
+
+        <!-- 기억 -->
+        <section class="panel char-col">
+            <h2>장기 기억 <span class="sub" id="char-ltm-count"></span></h2>
+            <div id="char-ltm" class="scrollbox grow2"></div>
+            <h2>말할 차례 판단 <span class="sub" id="char-turns-count"></span></h2>
+            <div id="char-turns" class="scrollbox grow1"></div>
+            <h2>최근 대화 <span class="sub">단기 기억</span></h2>
+            <div id="char-stm" class="scrollbox grow1"></div>
+        </section>
+    </div>
+    <div class="hint" id="char-hint"></div>
+</div>
+
+<!-- ═══════════ 탭 4: 기억 지도 ═══════════ -->
+<div id="tab-map" class="tab">
+    <section class="panel map-head">
+        <div class="seg">
+            <button class="seg-btn on" data-view="vector">벡터 지도</button>
+            <button class="seg-btn" data-view="mind">마인드맵</button>
+        </div>
+        <div class="seg" id="map-layout">
+            <button class="seg-btn on" data-layout="tsne">덩어리 보기</button>
+            <button class="seg-btn" data-layout="pca">거리 그대로</button>
+        </div>
+        <label class="inline"><input type="checkbox" id="map-edges" checked> 연결선</label>
+        <input id="map-q" type="search" placeholder="기억에서 찾기">
+        <span class="spacer"></span>
+        <span class="proc-detail" id="map-stat"></span>
+        <button id="btn-map-refresh">⟳ 새로고침</button>
+    </section>
+    <div class="map-body">
+        <div class="panel map-stage" id="map-stage"><div class="map-tip" id="map-tip"></div></div>
+        <section class="panel map-side">
+            <div id="map-legend"></div>
+            <div id="map-detail"></div>
+        </section>
+    </div>
+    <div class="hint" id="map-hint">API 서버가 실행되면 기억이 그려집니다.</div>
+</div>
+<button id="scroller" title="아래로">⌄</button>
+</main>
+
+<script src="app.js"></script>
+<script src="live.js"></script>
+<script src="map.js"></script>
+</body>
+</html>

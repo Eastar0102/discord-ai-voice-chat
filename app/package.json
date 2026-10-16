@@ -1,0 +1,30 @@
+{
+  "name": "companion-control",
+  "version": "0.1.0",
+  "description": "Voice companion control app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.0"
+  },
+  "build": {
+    "appId": "local.companion.control",
+    "productName": "CompanionControl",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "renderer/**"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "license": "Apache-2.0"
+}

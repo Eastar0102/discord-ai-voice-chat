@@ -1,0 +1,491 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    background: #16161e;
+    color: #c8c9d4;
+    font-family: 'Segoe UI', 'Malgun Gothic', sans-serif;
+    font-size: 14px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 20px;
+    background: #1d1d29;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+h1 { font-size: 18px; color: #e6e6f0; }
+h2 { font-size: 13px; color: #8a8aa3; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 14px 20px;
+    overflow: hidden;
+}
+
+/* ── 탭 ──────────────────────────────────────────────────── */
+.tabs { display: flex; gap: 4px; margin: 0 auto; }
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: #8a8aa3;
+    padding: 8px 18px;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.tab-btn:hover { background: #26263a; }
+.tab-btn.active { background: #2c2c40; color: #e6e6f0; font-weight: 600; }
+
+.tab { display: none; }
+.tab.active {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 12px;
+    overflow: hidden;
+}
+
+.panel {
+    background: #1d1d29;
+    border: 1px solid #2a2a3a;
+    border-radius: 10px;
+    padding: 14px 16px;
+}
+
+/* ── 제어 탭: 스크롤 + 넓으면 2열 ──────────────────────────────
+   패널이 6개로 늘면서 아래쪽이 잘려 있었다 (.tab.active의 overflow: hidden).
+   다른 탭은 안에서 스크롤을 관리하므로 제어 탭만 예외로 둔다 */
+.tab.stack.active {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-content: start;
+    gap: 12px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+@media (min-width: 1080px) {
+    #tab-control.active { grid-template-columns: 1fr 1fr; }
+    #tab-control .panel.wide { grid-column: 1 / -1; }
+}
+/* 좁은 칼럼에서 한 줄이 넘치지 않게 — 2열로 가면 행이 좁아진다 */
+.proc-row, .discord-row { flex-wrap: wrap; }
+
+/* ── 접히는 패널 ───────────────────────────────────────────── */
+.panel > h2 { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 6px; }
+.panel > h2::before {
+    content: '▾';
+    font-size: 10px;
+    color: #5a5a72;
+    transition: transform 0.12s;
+}
+.panel.collapsed > h2 { margin-bottom: 0; }
+.panel.collapsed > h2::before { transform: rotate(-90deg); }
+.panel.collapsed > *:not(h2) { display: none !important; }
+
+/* ── 패널 바로가기 (제어 탭 맨 위, 붙어 있음) ────────────────── */
+.jump {
+    grid-column: 1 / -1;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    padding: 6px 0 8px;
+    background: #16161e;
+}
+.jump button { font-size: 12px; padding: 4px 10px; }
+
+/* ── 위·아래로 ─────────────────────────────────────────────── */
+#scroller {
+    position: fixed;
+    right: 18px;
+    bottom: 18px;
+    z-index: 20;
+    display: none;
+    width: 38px; height: 38px;
+    border-radius: 19px;
+    font-size: 15px;
+    background: #2c2c40;
+    border: 1px solid #3f3f5a;
+    box-shadow: 0 2px 10px #0008;
+}
+#scroller.on { display: block; }
+
+/* ── 찍힌 화면 미리보기 ────────────────────────────────────── */
+#look-shot {
+    display: block;
+    max-width: 100%;
+    max-height: 260px;
+    margin-top: 8px;
+    border: 1px solid #2a2a3a;
+    border-radius: 6px;
+    cursor: zoom-in;
+}
+#look-shot.big { max-height: none; cursor: zoom-out; }
+
+button {
+    background: #2c2c40;
+    color: #d6d6e4;
+    border: 1px solid #3a3a52;
+    border-radius: 6px;
+    padding: 6px 14px;
+    cursor: pointer;
+    font-size: 13px;
+}
+button:hover { background: #383852; }
+button.primary { background: #4f46e5; border-color: #6259ef; color: #fff; }
+button.primary:hover { background: #6259ef; }
+button.danger { background: #3a2030; border-color: #5c2e44; color: #f0a3b8; }
+button.danger:hover { background: #5c2e44; }
+button.active { background: #3d6b3d; border-color: #58a058; color: #d2f5d2; }
+
+select {
+    background: #2c2c40;
+    color: #d6d6e4;
+    border: 1px solid #3a3a52;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-width: 180px;
+}
+
+label { color: #8a8aa3; font-size: 13px; }
+.llm-select { min-width: 320px; }
+button:disabled { opacity: 0.5; cursor: wait; }
+
+.proc-row, .discord-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.proc-name { width: 160px; font-weight: 600; color: #e0e0ec; }
+.proc-detail { color: #8a8aa3; font-size: 12px; flex: 1; }
+.spacer { flex: 1; }
+
+.dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.dot.on { background: #4ade80; box-shadow: 0 0 6px #4ade8088; }
+.dot.off { background: #6b2737; }
+.dot.starting { background: #fbbf24; box-shadow: 0 0 6px #fbbf2488; }
+
+.hint { color: #66667e; font-size: 12px; padding-top: 6px; }
+
+/* 링크 입력 — 한 줄을 채운다 */
+input[type="text"] {
+    background: #12121a;
+    color: #d6d6e4;
+    border: 1px solid #3a3a52;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    font-family: inherit;
+}
+input[type="text"]:focus { outline: none; border-color: #6259ef; }
+.grow { flex: 1; min-width: 180px; }
+
+.logs {
+    /* grid 안에서는 flex: 1이 무시된다 — 제어 탭을 grid로 바꾼 뒤 로그 창이 납작해졌다 */
+    flex: 1;
+    min-height: 260px;
+    display: flex;
+    gap: 12px;
+    overflow: hidden;
+}
+#tab-control .logs { grid-column: 1 / -1; }
+
+.log-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.log-col pre {
+    flex: 1;
+    min-height: 180px;
+    background: #12121a;
+    border: 1px solid #26263a;
+    border-radius: 8px;
+    padding: 10px;
+    overflow-y: auto;
+    font-family: 'Cascadia Mono', Consolas, monospace;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: #9d9db5;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+/* ── 캐릭터 상태 탭 ──────────────────────────────────────── */
+.char-head { display: flex; align-items: center; gap: 10px; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+    background: #2c2c40;
+    border: 1px solid #3a3a52;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 12px;
+    color: #b8b8cc;
+}
+.chip b { color: #e6e6f0; font-weight: 600; }
+
+.char-cols {
+    flex: 1;
+    display: flex;
+    gap: 12px;
+    overflow: hidden;
+}
+.char-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+}
+.sub { color: #66667e; font-size: 11px; text-transform: none; letter-spacing: 0; font-weight: 400; }
+
+.scrollbox {
+    background: #12121a;
+    border: 1px solid #26263a;
+    border-radius: 8px;
+    padding: 10px;
+    overflow-y: auto;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #a8a8c0;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+.grow1 { flex: 1 1 35%; min-height: 60px; }
+.grow2 { flex: 1 1 65%; min-height: 100px; }
+
+/* 키워드 바차트 */
+.kw-row { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
+.kw-word { width: 90px; text-align: right; color: #d6d6e4; font-size: 12px; flex-shrink: 0;
+           overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.kw-bar-wrap { flex: 1; background: #1d1d29; border-radius: 4px; height: 14px; }
+.kw-bar { background: linear-gradient(90deg, #4f46e5, #8b7cf8); height: 100%; border-radius: 4px; min-width: 3px; }
+.kw-count { width: 30px; color: #66667e; font-size: 11px; flex-shrink: 0; }
+
+/* 기억 항목 */
+.mem-item { padding: 6px 0; border-bottom: 1px solid #1f1f2e; }
+.mem-item:last-child { border-bottom: none; }
+.mem-ts { color: #66667e; font-size: 10.5px; }
+.mem-text { color: #c0c0d4; }
+
+/* RAG 로그 */
+.rag-query { color: #8b7cf8; font-weight: 600; }
+.rag-hit { color: #9d9db5; padding-left: 14px; }
+.rag-dist { color: #66667e; font-size: 10.5px; }
+.rag-none { color: #66667e; padding-left: 14px; font-style: italic; }
+
+/* 단기 대화 */
+.stm-user { color: #7cc4f8; }
+.stm-assistant { color: #f0a3b8; }
+
+/* ── 학습 데이터 탭 ──────────────────────────────────────── */
+#tab-data #ft-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.ft-card {
+    background: #232336;
+    border: 1px solid #33334d;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.ft-card.labeled { opacity: 0.72; border-color: #2a4a3a; }
+.ft-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.ft-when { font-size: 11px; color: #7c7c96; }
+.ft-who { font-size: 11px; color: #9a9ac0; background: #2c2c40; border-radius: 10px; padding: 1px 8px; }
+.ft-badge { font-size: 11px; margin-left: auto; padding: 1px 8px; border-radius: 10px; }
+.ft-badge.good { background: #1f3d2b; color: #8fe0ab; }
+.ft-badge.fix { background: #3a3520; color: #e0cf8f; }
+.ft-badge.bad { background: #3a2030; color: #f0a3b8; }
+.ft-user { color: #cfcfe4; margin-bottom: 4px; }
+.ft-user::before { content: '🗣 '; opacity: 0.6; }
+.ft-reply { color: #a8c8f0; margin-bottom: 8px; }
+.ft-reply::before { content: '🎙 '; opacity: 0.6; }
+/* 증류된 교사 답 — 로컬이 한 답과 눈으로 구분되게 왼쪽에 선을 둔다 */
+.ft-teacher {
+    color: #9ee0c0;
+    margin: 0 0 8px 0;
+    padding-left: 8px;
+    border-left: 2px solid #2f6b52;
+}
+.ft-teacher::before { content: '🎓 '; opacity: 0.6; }
+.ft-teacher.flagged { color: #e8c89a; border-left-color: #6b5a2f; }
+.ft-actions { display: flex; gap: 6px; }
+.ft-edit {
+    width: 100%;
+    margin-top: 8px;
+    background: #1b1b2a;
+    border: 1px solid #3a3a52;
+    border-radius: 6px;
+    color: #e6e6f0;
+    font: inherit;
+    padding: 6px 8px;
+    resize: vertical;
+}
+.ft-warn { font-size: 12px; color: #e0cf8f; margin-top: 6px; }
+.ft-saved {
+    margin-top: 8px;
+    font-size: 12px;
+    padding: 5px 9px;
+    border-radius: 6px;
+    background: #1f3d2b;
+    color: #8fe0ab;
+}
+.ft-saved.fix { background: #3a3520; color: #e8d89a; }
+.ft-saved.bad { background: #3a2030; color: #f0a3b8; }
+
+.ft-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+}
+.ft-filters label { color: #8f8fae; font-size: 12px; }
+.ft-filters select, .ft-filters input[type="search"] {
+    background: #1b1b2a;
+    border: 1px solid #3a3a52;
+    border-radius: 6px;
+    color: #e6e6f0;
+    font: inherit;
+    font-size: 13px;
+    padding: 4px 8px;
+}
+.ft-filters input[type="search"] { flex: 1; min-width: 160px; }
+.ft-more { display: flex; justify-content: center; padding: 4px 0 10px; }
+
+/* ── 기억 지도 ────────────────────────────────────────────── */
+.map-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.seg { display: flex; background: #16161e; border: 1px solid #2a2a3a; border-radius: 8px; padding: 2px; }
+.seg-btn { background: transparent; border: none; color: #8a8aa3; padding: 5px 12px; border-radius: 6px; font-size: 13px; }
+.seg-btn:hover { color: #c8c9d4; }
+.seg-btn.on { background: #2c2c40; color: #e6e6f0; font-weight: 600; }
+.map-head .inline { display: flex; align-items: center; gap: 5px; color: #8a8aa3; font-size: 13px; }
+.map-head input[type=search] {
+    background: #16161e; border: 1px solid #2a2a3a; color: #c8c9d4;
+    border-radius: 8px; padding: 6px 10px; font-family: inherit; font-size: 13px; width: 180px;
+}
+.map-body { flex: 1; display: grid; grid-template-columns: 1fr 300px; gap: 12px; overflow: hidden; }
+.map-stage { position: relative; overflow: auto; padding: 0; }
+.map-stage svg { display: block; width: 100%; height: 100%; }
+.map-stage.scrolly { padding: 8px 14px 24px; }
+.map-stage.scrolly svg { width: 1180px; height: auto; }
+.map-side { overflow: auto; }
+.map-lg { display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #8a8aa3; padding: 3px 0; }
+.map-lg .d { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+.map-lg b { margin-left: auto; font-weight: 400; color: #c8c9d4; }
+.map-note { color: #6a6a85; font-size: 11.5px; line-height: 1.6; border-top: 1px dashed #2a2a3a;
+            margin-top: 10px; padding-top: 10px; }
+.map-detail h3 { font-size: 12px; color: #8a8aa3; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+.map-detail .txt { font-size: 14px; line-height: 1.55; color: #e6e6f0; }
+.map-detail .meta { font-size: 11.5px; color: #8a8aa3; line-height: 1.8; margin-top: 8px;
+                    border-top: 1px solid #2a2a3a; padding-top: 7px; }
+.map-detail .near div { font-size: 12.5px; color: #8a8aa3; padding: 5px 0; border-top: 1px solid #2a2a3a;
+                        cursor: pointer; line-height: 1.45; }
+.map-detail .near div:hover { color: #e6e6f0; }
+.map-detail .near b { color: #6a6a85; font-weight: 400; }
+.map-tip { position: absolute; pointer-events: none; background: #0d0d14; border: 1px solid #2a2a3a;
+           border-radius: 8px; padding: 7px 10px; font-size: 12.5px; max-width: 300px; line-height: 1.45;
+           color: #e6e6f0; opacity: 0; transition: opacity .1s; z-index: 5; }
+#map-stage .nd { cursor: pointer; }
+#map-stage .nd.dim { opacity: .13; }
+#map-stage .nd.sel { stroke: #fff; stroke-width: 2.5; }
+#map-stage .lk { stroke: #3b3b52; stroke-width: 1; fill: none; }
+#map-stage .lk.dim { opacity: .12; }
+#map-stage .lk.hot { stroke: #b39ddb; stroke-width: 1.8; }
+#map-stage text { font-family: inherit; fill: #8a8aa3; }
+#map-stage .leaf { font-size: 11.5px; cursor: pointer; }
+#map-stage .leaf.dim { opacity: .15; }
+#map-stage .leaf.sel { fill: #fff; font-weight: 700; }
+#map-stage .grp { font-size: 13px; fill: #e6e6f0; font-weight: 700; }
+#map-stage .grp-n { font-size: 10.5px; fill: #6a6a85; }
+/* 갈래 머리는 눌러서 펼치고 접는다 — 글자라 손잡이가 안 보이므로 커서와 호버로 알린다 */
+#map-stage .grp-tap { cursor: pointer; }
+#map-stage .grp-tap:hover { fill: #8b7cf8; }
+#map-stage .leaf.more { fill: #8b7cf8; cursor: pointer; font-style: italic; }
+#map-stage .hub { font-size: 15px; fill: #fff; font-weight: 800; }
+#map-stage .ax { stroke: #2a2a3a; stroke-dasharray: 3 4; }
+#map-stage .ax-t { font-size: 10.5px; fill: #6a6a85; }
+
+/* 말할 차례 판단 */
+.turn-yes { color: #8ee3b0; font-weight: 600; }
+.turn-no { color: #767e93; font-weight: 600; }
+.turn-init { color: #c4a6ff; font-weight: 600; }
+
+/* ── 대화 (실시간) ── 채팅처럼 ────────────────────────── */
+.live-panel { flex: 1; display: flex; padding: 0; overflow: hidden; }
+.live-input { padding: 10px 12px; }
+.live-input .discord-row { padding: 0; }
+.live-list { flex: 1; overflow-y: auto; padding: 14px 18px 20px; display: flex; flex-direction: column; gap: 2px; }
+
+.msg { display: flex; flex-direction: column; margin-top: 10px; }
+.msg + .msg { margin-top: 4px; }
+.msg-who { font-size: 11.5px; color: #8a8aa3; margin: 6px 0 3px 35px; }
+.msg-row { display: flex; align-items: flex-end; gap: 7px; max-width: 78%; }
+.msg-av { width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover;
+          background: #2c2c40; align-self: flex-end; }
+.msg-av-x { display: flex; align-items: center; justify-content: center; font-size: 12px;
+            font-weight: 700; color: #8a8aa3; }
+.msg-av-gap { width: 26px; flex: none; }
+.msg-bubble { padding: 8px 12px; border-radius: 14px; font-size: 14px; line-height: 1.5;
+              white-space: pre-wrap; word-break: break-word; }
+.msg-meta { font-size: 10.5px; color: #5c6478; white-space: nowrap; display: flex; gap: 5px;
+            align-items: center; padding-bottom: 2px; }
+
+/* 사람 — 왼쪽 */
+.msg.human { align-items: flex-start; }
+.msg.human .msg-bubble { background: #262633; color: #e6e6f0; border-bottom-left-radius: 5px; }
+
+/* 캐릭터 — 오른쪽 */
+.msg.char { align-items: flex-end; }
+.msg.char .msg-who { margin: 6px 35px 3px 0; }
+.msg.char .msg-row { flex-direction: row-reverse; }
+.msg.char .msg-bubble { background: #2b4a3c; color: #dff3e8; border-bottom-right-radius: 5px; }
+
+/* 듣기만 한 말 — 흐리게, 점선 테두리 */
+.msg.skip .msg-bubble { background: transparent; border: 1px dashed #33333f; color: #6f7588; font-size: 13px; }
+.skip-tag { font-size: 11px; color: #5c6478; margin-left: 8px; }
+
+/* 먼저 말 걸기 */
+.msg.init .msg-bubble { background: #322a46; color: #c4b5e8; font-size: 13px; }
+
+.lat { font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 4px; }
+.lat-ok { color: #8ee3b0; background: #1b2d24; }
+.lat-mid { color: #f0c068; background: #2e2717; }
+.lat-bad { color: #ff9b8a; background: #331d1b; }
+
+/* 모델·엔진이 바뀐 지점 */
+.setup { display: flex; align-items: center; gap: 10px; margin: 14px 0 4px; color: #6a6a85; font-size: 11px; }
+.setup::before, .setup::after { content: ""; flex: 1; height: 1px; background: #2a2a3a; }
+
+/* 캐릭터가 먼저 꺼낸 말 */
+.msg.first .msg-bubble { background: #33305c; color: #ddd6f5; }
+.first-tag { display: block; font-size: 10.5px; color: #9a92c4; margin-top: 4px; }
+
+/* 음성 인식이 밀렸을 때 */
+.warn { margin: 10px 0 2px; padding: 5px 10px; border-radius: 8px; align-self: center;
+        background: #331d1b; color: #ff9b8a; font-size: 11.5px; text-align: center; }
+
+/* 화면을 본 것 · 링크를 읽은 것 — 대화 사이에 끼는 사건이라 말풍선이 아니다 */
+.saw { margin: 8px 0 2px; padding: 4px 10px; border-radius: 8px; align-self: center;
+       background: #1b2a33; color: #8ac6e0; font-size: 11.5px; text-align: center; }

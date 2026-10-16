@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 570" width="1100" height="570" font-family="-apple-system, 'Segoe UI', 'Malgun Gothic', sans-serif">
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f4f6f8; stroke: #d0d7de; }
+    .box { fill: #ffffff; stroke: #57606a; stroke-width: 1.2; }
+    .core { fill: #ddf4ff; stroke: #0969da; stroke-width: 1.4; }
+    .side { fill: #fff8c5; stroke: #9a6700; stroke-width: 1.2; }
+    .swap { fill: #dafbe1; stroke: #1a7f37; stroke-width: 1.2; }
+    .t { fill: #1f2328; font-size: 14px; }
+    .tb { fill: #1f2328; font-size: 15px; font-weight: 600; }
+    .s { fill: #57606a; font-size: 12px; }
+    .lane-t { fill: #57606a; font-size: 13px; font-weight: 600; letter-spacing: .04em; }
+    .a { stroke: #57606a; stroke-width: 1.6; fill: none; marker-end: url(#ah); }
+    .ad { stroke: #9a6700; stroke-width: 1.3; fill: none; stroke-dasharray: 5 4; marker-end: url(#ahd); }
+    .ah { fill: #57606a; } .ahd { fill: #9a6700; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0d1117; }
+      .lane { fill: #161b22; stroke: #30363d; }
+      .box { fill: #0d1117; stroke: #8b949e; }
+      .core { fill: #0c2d6b; stroke: #4493f8; }
+      .side { fill: #3b2e00; stroke: #d29922; }
+      .swap { fill: #0f3d1f; stroke: #3fb950; }
+      .t, .tb { fill: #e6edf3; }
+      .s, .lane-t { fill: #8b949e; }
+      .a { stroke: #8b949e; } .ah { fill: #8b949e; }
+      .ad { stroke: #d29922; } .ahd { fill: #d29922; }
+    }
+  </style>
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ah" d="M0,0 L10,5 L0,10 z"/></marker>
+    <marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="ahd" d="M0,0 L10,5 L0,10 z"/></marker>
+  </defs>
+  <rect class="bg" width="1100" height="570"/>
+
+  <!-- lanes -->
+  <rect class="lane" x="20" y="20" width="1060" height="110" rx="10"/>
+  <text class="lane-t" x="36" y="44">DISCORD · NODE.JS (discord_bot/)</text>
+  <rect class="lane" x="20" y="150" width="1060" height="385" rx="10"/>
+  <text class="lane-t" x="136" y="174">PYTHON · FASTAPI (src/)</text>
+
+  <!-- node lane -->
+  <rect class="box" x="40" y="58" width="190" height="56" rx="8"/>
+  <text class="tb" x="135" y="82" text-anchor="middle">Voice channel</text>
+  <text class="s" x="135" y="101" text-anchor="middle">Opus in, per speaker</text>
+
+  <rect class="box" x="300" y="58" width="230" height="56" rx="8"/>
+  <text class="tb" x="415" y="82" text-anchor="middle">voice_handler.js</text>
+  <text class="s" x="415" y="101" text-anchor="middle">PCM 20 ms chunks · speaker lock</text>
+
+  <rect class="box" x="850" y="58" width="210" height="56" rx="8"/>
+  <text class="tb" x="955" y="82" text-anchor="middle">AudioPlayer</text>
+  <text class="s" x="955" y="101" text-anchor="middle">queue · barge-in stop</text>
+
+  <path class="a" d="M230,86 H298"/>
+
+  <!-- python lane: streaming path -->
+  <rect class="core" x="40" y="200" width="150" height="70" rx="8"/>
+  <text class="tb" x="115" y="228" text-anchor="middle">VAD</text>
+  <text class="s" x="115" y="248" text-anchor="middle">WebRTC + RMS gate</text>
+  <text class="s" x="115" y="262" text-anchor="middle">vad.py</text>
+
+  <rect class="core swap" x="225" y="200" width="160" height="70" rx="8"/>
+  <text class="tb" x="305" y="228" text-anchor="middle">STT</text>
+  <text class="s" x="305" y="248" text-anchor="middle">Whisper · partials</text>
+  <text class="s" x="305" y="262" text-anchor="middle">providers/stt/</text>
+
+  <rect class="core" x="420" y="200" width="170" height="70" rx="8"/>
+  <text class="tb" x="505" y="228" text-anchor="middle">Turn-taking</text>
+  <text class="s" x="505" y="248" text-anchor="middle">rules → optional judge</text>
+  <text class="s" x="505" y="262" text-anchor="middle">websocket_handler.py</text>
+
+  <rect class="core swap" x="625" y="200" width="170" height="70" rx="8"/>
+  <text class="tb" x="710" y="228" text-anchor="middle">LLM (stream)</text>
+  <text class="s" x="710" y="248" text-anchor="middle">Ollama · llama.cpp · API</text>
+  <text class="s" x="710" y="262" text-anchor="middle">providers/llm/</text>
+
+  <rect class="core swap" x="830" y="200" width="230" height="70" rx="8"/>
+  <text class="tb" x="945" y="228" text-anchor="middle">TTS (per sentence)</text>
+  <text class="s" x="945" y="248" text-anchor="middle">Edge · GPT-SoVITS · emotion</text>
+  <text class="s" x="945" y="262" text-anchor="middle">providers/tts/</text>
+
+  <path class="a" d="M415,114 V160 H115 V198"/>
+  <text class="s" x="250" y="155">WebSocket /ws · binary audio</text>
+  <path class="a" d="M190,235 H223"/>
+  <path class="a" d="M385,235 H418"/>
+  <path class="a" d="M590,235 H623"/>
+  <path class="a" d="M795,235 H828"/>
+  <path class="a" d="M945,200 V116"/>
+  <text class="s" x="955" y="160">audio + subtitles</text>
+
+  <!-- prompt assembly -->
+  <rect class="box" x="420" y="320" width="375" height="92" rx="8"/>
+  <text class="tb" x="607" y="345" text-anchor="middle">Prompt assembly (llm.py)</text>
+  <text class="s" x="607" y="366" text-anchor="middle">character pack · [memory] · [lore] · [live situation]</text>
+  <text class="s" x="607" y="384" text-anchor="middle">normalized history · what it is reading · clock (last)</text>
+  <text class="s" x="607" y="402" text-anchor="middle">partial transcript prefetch warms the cache</text>
+  <path class="a" d="M710,320 V272"/>
+
+  <!-- side systems -->
+  <rect class="side" x="40" y="320" width="340" height="92" rx="8"/>
+  <text class="tb" x="210" y="345" text-anchor="middle">Long-term memory (memory.py)</text>
+  <text class="s" x="210" y="366" text-anchor="middle">episodes · person facts · self facts</text>
+  <text class="s" x="210" y="384" text-anchor="middle">reconcile add/replace/skip · absolute dates</text>
+  <text class="s" x="210" y="402" text-anchor="middle">ChromaDB · keyed by Discord user ID</text>
+  <path class="ad" d="M380,366 H418"/>
+
+  <rect class="side" x="830" y="320" width="230" height="92" rx="8"/>
+  <text class="tb" x="945" y="345" text-anchor="middle">Eyes</text>
+  <text class="s" x="945" y="366" text-anchor="middle">links (read_url.py)</text>
+  <text class="s" x="945" y="384" text-anchor="middle">screen OCR / VLM (vision.py)</text>
+  <text class="s" x="945" y="402" text-anchor="middle">Google Docs (gdocs.py)</text>
+  <path class="ad" d="M830,366 H797"/>
+
+  <!-- background loops -->
+  <rect class="side" x="40" y="440" width="340" height="80" rx="8"/>
+  <text class="tb" x="210" y="465" text-anchor="middle">Background loops</text>
+  <text class="s" x="210" y="486" text-anchor="middle">episode flush on silence · session summary</text>
+  <text class="s" x="210" y="504" text-anchor="middle">initiative (speaks first) · greetings on join</text>
+  <path class="ad" d="M210,440 V414"/>
+
+  <rect class="box" x="420" y="440" width="640" height="80" rx="8"/>
+  <text class="tb" x="740" y="465" text-anchor="middle">Observability</text>
+  <text class="s" x="740" y="486" text-anchor="middle">data/metrics.jsonl: every turn, gate decision, latency split (endpoint · STT · LLM · TTS)</text>
+  <text class="s" x="740" y="504" text-anchor="middle">Electron control app (app/) reads it live: conversation view, turn log, memory map</text>
+
+  <!-- legend -->
+  <rect class="swap" x="40" y="543" width="12" height="12" rx="3"/>
+  <text class="s" x="58" y="553">swappable engine (config.json → provider)</text>
+  <rect class="side" x="330" y="543" width="12" height="12" rx="3"/>
+  <text class="s" x="348" y="553">feeds the prompt / runs in background</text>
+</svg>

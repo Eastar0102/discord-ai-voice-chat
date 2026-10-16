@@ -1,0 +1,27 @@
+# Secrets
+.env
+data/google_token.json
+config/private.json
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Node.js
+node_modules/
+app/dist/
+
+# Runtime data (conversation history, memory, logs — personal, never commit)
+data/
+
+# Character packs other than the example (keep your own character private)
+characters/*
+!characters/example/
+
+# OS / editor
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/

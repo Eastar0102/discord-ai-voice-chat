@@ -74,11 +74,7 @@ You only do this once. Follow the steps in order.
 
 > For a first test, use a server of your own with nobody else in it. Other people's talk won't end up in memory, and screenshots won't show anyone else's name.
 
-<!-- Reference image slots: the Developer Portal Bot page (intents) and the OAuth2 URL Generator.
-     Add docs/images/guide-portal-bot.png and guide-portal-oauth.png, then uncomment.
-![Bot page — Message Content Intent](images/guide-portal-bot.png)
-![OAuth2 URL Generator — bot scope and permissions](images/guide-portal-oauth.png)
--->
+> If a screen looks different, Discord's official [Getting Started](https://discord.com/developers/docs/quick-start/getting-started) walks through the same steps with pictures. The portal changes often, so it isn't captured here.
 
 ## 3. Install
 
@@ -389,15 +385,19 @@ The API server and bot logs are at the bottom. The small buttons at the top (Pro
 
 ### 8-4. Conversation — live view
 
-- People's lines are on the left, the character's on the right.
-- The number under each reply is the **felt latency** (end of speech → first sound). Hover it for the endpoint / STT / thinking / to-first-sound split.
-- A dashed bubble is something it **didn't answer**, with the reason (e.g. `listened only · 사람들끼리`).
-- A horizontal rule marks where the model or voice changed.
-- Typing in the box at the bottom is handled exactly like speech, and the character answers out loud. A link in the box is read first.
+![Conversation tab (sample data)](images/guide-live.png)
 
-<!-- Reference image slot: docs/images/guide-live.png
-![Conversation tab](images/guide-live.png)
--->
+*The conversation and names (루카, 미르) in the picture are sample data for illustration.*
+
+| # | name | what you see |
+|---|---|---|
+| ① | Summary line | answered · listened only · spoke first · median time to first sound · current model |
+| ② | Dashed bubble | something it **didn't answer**, with the reason (e.g. `listened only · 사람들끼리` = people talking to each other) |
+| ③ | Latency chip | **felt latency** (end of speech → first sound): green under 2.5 s · amber · red over 4 s. Hover for the endpoint / STT / thinking / to-first-sound split |
+| ④ | Purple bubble | something the character **said first** (an arrival greeting, or speaking up when it's quiet), with how long it was quiet and the threshold |
+| ⑤ | Input box | typing is handled exactly like speech, and the character answers out loud; a link is read first |
+
+People's lines are on the left, the character's on the right. A horizontal rule marks where the model or voice changed.
 
 ### 8-5. State — what's on its mind
 
@@ -417,13 +417,18 @@ It refreshes every 10 seconds.
 
 ### 8-6. Memory — memory map
 
-- **Vector map**: one dot per memory; closer means more similar. Click a dot to see what would be retrieved with it. `Clusters` (t-SNE) shows grouping well; `True distances` (PCA) keeps real distances.
-- **Mind map**: character → per person / episodes / itself. Click a branch name to expand or collapse it.
-- The search box at the top finds memories.
+![Memory tab (sample data)](images/guide-memory.png)
 
-<!-- Reference image slot: docs/images/guide-map.png
-![Memory tab](images/guide-map.png)
--->
+*The memories in the picture are sample data for illustration.*
+
+| # | name | what it does |
+|---|---|---|
+| ① | View | **Vector map**: one dot per memory, closer means more similar · **Mind map**: character → per person / episodes / itself (click a branch name to expand or collapse) |
+| ② | Layout | `Clusters` (t-SNE) shows grouping well; `True distances` (PCA) keeps real distances |
+| ③ | Search | find memories by word; non-matching dots fade |
+| ④ | Selected dot | click a dot to link it to the memories that would be retrieved with it |
+| ⑤ | Legend | color and count per kind (episodes · about people · itself) |
+| ⑥ | Detail | the memory's text, when it was saved, its due date, and nearby memories with their distance. Distance ≤ 120 is what retrieval treats as relevant |
 
 ### 8-7. Other
 

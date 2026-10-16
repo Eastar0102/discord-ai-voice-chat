@@ -31,16 +31,31 @@ This repository is **not a finished character or a hosted bot**. It is the plumb
 
 Around the main loop are a few extras. It greets people who join and speaks first when it's quiet. It can read a link, the screen, or a Google Doc together with you. It has a separate meeting-transcription mode. And an Electron control app shows every turn with its latency split.
 
+## Measured, not guessed
+
+Every stage was tuned against real voice sessions: measure the failure, change one thing, measure again. Full tables, charts and limits are in **[docs/RESULTS.md](docs/RESULTS.md)**.
+
+| | result |
+|---|---|
+| Felt latency, end of speech → first sound (median, fully local) | **2.49 s** over a 98-turn live session |
+| Time to first token, MoE on CPU, cache-friendly layout + prefetch | **2.59 s → 0.37 s** |
+| Asking the persona model to say `(pass)` when not addressed | fired **0 / 286** times → replaced by rules + a guarded judge |
+| Memory screening asked "what is this about?" instead of "drop it?" | junk missed **25/41 → 1/41**, real facts dropped **6–9/20 → 1–2/20** |
+| Clock moved to the end of the prompt | date/time quiz **4/8 → 12/12** |
+| Endpointing on Discord audio (646 turns) | the most common path was the slowest (0.92 s) → unfinished-sentence-aware stall timeout |
+
+![Latency fixes, before and after](docs/images/latency-fixes.svg)
+
 ## Screenshots
 
-<!--
-  Add images to docs/images/ and uncomment.
-  Avoid real names, avatars and server names in the shots — the control app shows them.
--->
-<!-- ![Control app — live conversation](docs/images/control-live.png) -->
-<!-- ![Control app — turn-taking log and memory](docs/images/control-state.png) -->
-<!-- ![Memory map](docs/images/memory-map.png) -->
-<!-- ![Discord — commands and transcription](docs/images/discord.png) -->
+The Electron control app, in English (it also runs in Korean):
+
+| | |
+|---|---|
+| ![Control tab](docs/images/control.png) | ![State tab](docs/images/state.png) |
+| **Control**: processes, Discord, character pack, LLM and voice switching | **State**: live prompt, retrieved memory, turn-taking log, short-term history |
+| ![Look tab](docs/images/look.png) | ![Transcribe tab](docs/images/transcribe.png) |
+| **Look**: show it a screen or window, or give it a link | **Transcribe**: meeting-log mode with selectable Whisper presets |
 
 ## Project structure
 
@@ -76,7 +91,7 @@ discord-ai-voice-chat/
 └─ data/                       created at runtime: per-character history (characters/<id>/), memory DB, metrics (git-ignored)
 ```
 
-A deeper walk-through of one turn, the memory lifecycle and how to add a provider is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**.
+A deeper walk-through of one turn, the memory lifecycle and how to add a provider is in **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**. The measurements behind each decision are in **[docs/RESULTS.md](docs/RESULTS.md)**.
 
 ## Quick start
 

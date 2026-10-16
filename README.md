@@ -4,6 +4,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![discord.js](https://img.shields.io/badge/discord.js-14-5865F2?logo=discord&logoColor=white) ![Electron](https://img.shields.io/badge/Electron-31-47848F?logo=electron&logoColor=white) ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
 
+![Whisper](https://img.shields.io/badge/STT-faster--whisper-74AA9C) ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-EE4C2C?logo=pytorch&logoColor=white) ![Ollama](https://img.shields.io/badge/LLM-Ollama-000000?logo=ollama&logoColor=white) ![llama.cpp](https://img.shields.io/badge/LLM-llama.cpp-8A2BE2) ![Claude](https://img.shields.io/badge/LLM-Claude_API-D97757?logo=anthropic&logoColor=white) ![OpenAI](https://img.shields.io/badge/LLM-OpenAI_API-412991) ![TTS](https://img.shields.io/badge/TTS-Edge_TTS_%7C_GPT--SoVITS-0078D7) ![Hugging Face](https://img.shields.io/badge/Embeddings-sentence--transformers-FFD21E?logo=huggingface&logoColor=black) ![ChromaDB](https://img.shields.io/badge/Vector_DB-ChromaDB-FF6446)
+
 **A reference pipeline for real-time AI voice conversation in Discord voice channels.**
 
 Someone speaks in a voice channel. A few seconds later an AI character answers out loud. It decides on its own whether it was being spoken to, remembers people across sessions, and starts a conversation when the room goes quiet.

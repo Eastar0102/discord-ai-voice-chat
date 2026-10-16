@@ -4,6 +4,8 @@
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?logo=python&logoColor=white) ![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?logo=nodedotjs&logoColor=white) ![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white) ![discord.js](https://img.shields.io/badge/discord.js-14-5865F2?logo=discord&logoColor=white) ![Electron](https://img.shields.io/badge/Electron-31-47848F?logo=electron&logoColor=white) ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
 
+![Whisper](https://img.shields.io/badge/STT-faster--whisper-74AA9C) ![PyTorch](https://img.shields.io/badge/PyTorch-CUDA-EE4C2C?logo=pytorch&logoColor=white) ![Ollama](https://img.shields.io/badge/LLM-Ollama-000000?logo=ollama&logoColor=white) ![llama.cpp](https://img.shields.io/badge/LLM-llama.cpp-8A2BE2) ![Claude](https://img.shields.io/badge/LLM-Claude_API-D97757?logo=anthropic&logoColor=white) ![OpenAI](https://img.shields.io/badge/LLM-OpenAI_API-412991) ![TTS](https://img.shields.io/badge/TTS-Edge_TTS_%7C_GPT--SoVITS-0078D7) ![Hugging Face](https://img.shields.io/badge/Embeddings-sentence--transformers-FFD21E?logo=huggingface&logoColor=black) ![ChromaDB](https://img.shields.io/badge/Vector_DB-ChromaDB-FF6446)
+
 **디스코드 음성 채널에서 AI와 실시간으로 음성 대화하는 파이프라인의 레퍼런스 구현입니다.**
 
 누군가 음성 채널에서 말하면, 몇 초 뒤 AI 캐릭터가 소리 내어 대답합니다. 자기에게 한 말인지 스스로 판단하고, 사람을 세션이 바뀌어도 기억하고, 방이 조용해지면 먼저 말을 꺼냅니다.

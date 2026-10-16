@@ -5,6 +5,7 @@ Edge TTS Provider — Microsoft Edge 신경망 보이스 (무료, API 키 불필
 - 합성이 빨라(문장당 수백 ms) 첫 음성까지의 지연(TTFA)이 짧다
 """
 import asyncio
+import concurrent.futures
 import io
 
 import edge_tts
@@ -43,8 +44,15 @@ class EdgeTTS:
             return buf.getvalue()
 
         try:
-            # executor 스레드에서 호출되므로 전용 이벤트 루프 사용
-            audio = asyncio.run(run())
+            # 보통 executor 스레드에서 불려 전용 이벤트 루프를 쓴다. 이미 루프가 도는 스레드
+            # (REST /tts, 워밍업)에서 불리면 asyncio.run이 실패하므로 그때는 별도 스레드에서 돌린다
+            try:
+                asyncio.get_running_loop()
+            except RuntimeError:
+                audio = asyncio.run(run())
+            else:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    audio = ex.submit(asyncio.run, run()).result()
             return audio if audio else None
         except Exception as e:
             print(f"[TTS:edge] 합성 오류: {e}")

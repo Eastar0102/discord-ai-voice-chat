@@ -19,7 +19,7 @@ scipy>=1.10.0
 torch>=2.0.0
 
 # TTS (default engine; GPT-SoVITS runs as its own process — see README)
-edge-tts>=6.1
+edge-tts>=7.3.1   # older versions get 403 from the Edge endpoint
 
 # Memory (vector store + Korean sentence embeddings)
 chromadb>=0.4.18
